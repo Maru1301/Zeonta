@@ -13,7 +13,7 @@ This project is a comprehensive tools package built with Wails (Go + React.js). 
 
 ## 🛠 Tech Stack
 - Backend: Go (The engine for system-level operations)
-- Frontend: React.js (The interface layer)
+- Frontend: React.js + MUI
 - Framework: Wails (Bridging Go and Web technologies)
 - Styling: Tailwind CSS (Recommended for rapid UI development)
 
