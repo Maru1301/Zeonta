@@ -1,35 +1,36 @@
 # Zeonta
 
-## Modern Tooling Suite: A Wails-Powered GUI for Scripts
+## Personal Script Manager: A Wails-Powered GUI for Scripts and Go Functions
 
-This project is a comprehensive tools package built with Wails (Go + React.js). It is designed to simplify complex workflows by providing a clean Graphical User Interface for executing shell scripts and Go functions. By wrapping low-level command-line logic in an intuitive UI, this project aims to lower the barrier to entry for technical tasks and improve daily productivity.
+Zeonta is a desktop application for users who frequently work with shell scripts or Go functions. Instead of jumping to the terminal each time, you write your scripts or Go functions directly in the app, store them as named tools, configure parameters and environment variables, and run them with a single click.
 
 ## ✨ Key Features
-- 🚀 Script Orchestration: Run complex shell scripts (.sh, .bat, .ps1) with a single click.
-- 🐹 Go-Native Performance: Leverage the full power of Go for backend-heavy utility functions.
-- 🎨 Modern UI/UX: A responsive React-based interface that makes technical tooling accessible.
-- 📦 Cross-Platform: Package your tools into a single, lightweight executable for Windows, macOS, and Linux.
-- 🛠 Extensible Architecture: Easily register new scripts or functions via a unified bridge.
+- 📝 Script & Function Storage: Write and store shell scripts or Go functions as reusable named tools.
+- ⚙️ Parameterization: Define input parameters and environment variables per tool, configurable at runtime.
+- 🚀 One-Click Execution: Run any stored tool instantly from the UI.
+- 🛠 Full Tool Management: Add, modify, and delete tools at any time.
+- 📦 Offline & Lightweight: Runs entirely offline as a single lightweight executable.
 
 ## 🛠 Tech Stack
-- Backend: Go (The engine for system-level operations)
-- Frontend: React.js + MUI
-- Framework: Wails (Bridging Go and Web technologies)
-- Styling: Tailwind CSS (Recommended for rapid UI development)
+- Backend: Go (script execution and tool management)
+- Frontend: React.js + MUI (component library) + Tailwind CSS (utility styling)
+- Framework: Wails v2 (bridging Go and web technologies)
 
 ## 🚀 Getting Started
-Prerequisites
+
+### Prerequisites
 To build and run this project, you need the following installed:
 1. Go (1.21+)
 2. Node.js (18+) & NPM/PNPM
 3. Wails CLI:
    ```
-   go install [github.com/wailsapp/wails/v2/cmd/wails@latest](https://github.com/wailsapp/wails/v2/cmd/wails@latest)
+   go install github.com/wailsapp/wails/v2/cmd/wails@latest
    ```
-Installation & Development
+
+### Installation & Development
 1. Clone the repository:
    ```
-   git clone [https://github.com/your-username/zeonta.git](https://github.com/your-username/zeonta.git)
+   git clone https://github.com/Maru1301/Zeonta.git
    cd zeonta
    ```
 2. Run in development mode:
@@ -37,8 +38,11 @@ Installation & Development
    wails dev
    ```
    This will start the Go backend and the React frontend with hot-reload enabled.
-3. Build for production:wails build
-The compiled binary will be available in the build/bin directory.
+3. Build for production:
+   ```
+   wails build
+   ```
+   The compiled binary will be available in the `build/bin` directory.
 
 ## 📂 Project Structure
 ```
@@ -49,13 +53,13 @@ zeonta/
 │   ├── src/           # UI Components and state management
 │   └── wailsjs/       # Auto-generated Go-to-JS bindings
 ├── build/             # Application icons and compiled binaries
-└── scripts/           # (Optional) Storage for bundled shell scripts
+└── scripts/           # Storage for user-defined shell scripts
 ```
 
 ## 💡 How to Add a New Tool
 Zeonta makes it easy to add new functionality:
 1. Define the Go Function: Add a new method in app.go.
-   ```
+   ```go
    func (a *App) RunMyScript(param string) string {
     // Your Go logic or shell script execution here
     return "Task Completed"
@@ -63,7 +67,7 @@ Zeonta makes it easy to add new functionality:
    ```
 
 2. Call from React: Import the generated binding in your React component.
-   ```
+   ```js
    import { RunMyScript } from "../wailsjs/go/main/App";
 
    const handleAction = async () => {
