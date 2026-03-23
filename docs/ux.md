@@ -97,7 +97,7 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 [Content Area refreshes with updated values]
 ```
 
-### Flow 3 — Run a Tool (no parameters)
+### Flow 3 — Run a Tool (no parameters, no env vars)
 
 ```
 [Content Area: click "Run"]
@@ -110,19 +110,34 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 [Output remains visible until user dismisses or runs again]
 ```
 
-### Flow 4 — Run a Tool (with parameters)
+### Flow 4 — Run a Tool (has parameters and/or env vars)
+
+The Edit Panel opens as a "Run Panel" — same panel used for editing,
+but in run mode. It shows two sections: Parameters and Environment Variables.
+Both are pre-filled with their stored default values. The user reviews,
+edits any values (Postman-style), then confirms.
 
 ```
 [Content Area: click "Run"]
         ↓
-[Edit Panel slides in — shows parameter fields pre-filled with defaults]
+[Edit Panel slides in — "Run: <tool name>" title]
+  Section 1 — Parameters (if any):
+    Each param shown as a labeled input, pre-filled with its default value
+  Section 2 — Environment Variables (if any):
+    Each env var shown as a key + editable value row, pre-filled with stored value
+    Values support {{VAR}} references to other env vars (resolved top-to-bottom)
+        ↓
 [User reviews / edits values, clicks "Run Now"]
         ↓
 [Edit Panel closes]
-[Output Panel slides up — execution begins]
+[Output Panel slides up — execution begins with the user-provided values]
         ↓
 [stdout/stderr stream in, exit code shown on completion]
 ```
+
+> **Note:** Edits made in the Run Panel are **not** saved back to the tool definition.
+> They are one-time overrides for this execution only. To change the defaults,
+> the user must use the Edit flow (Flow 2).
 
 ### Flow 5 — Delete a Tool
 
@@ -175,5 +190,5 @@ App
 | Creating new tool | Sidebar + Tool Detail (or Empty) + Edit Panel (blank) |
 | Editing tool | Sidebar + Tool Detail + Edit Panel (pre-filled) |
 | Running (no params) | Sidebar + Tool Detail + Output Panel open |
-| Running (with params) | Sidebar + Tool Detail + Edit Panel (params) → then Output Panel open |
+| Running (with params/env vars) | Sidebar + Tool Detail + Edit Panel in run mode (params + env vars pre-filled) → then Output Panel open |
 | Confirm delete | Inline confirmation within Tool Detail |
