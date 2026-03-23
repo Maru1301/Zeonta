@@ -98,4 +98,4 @@ wails generate module
 - Do not add dependencies without a clear reason tied to the spec
 - Prefer extending `app.go` over creating new Go files unless a package boundary makes sense
 - When in doubt about scope, refer back to the Core Requirements above
-- After completing a task, always create a git commit with a concise message describing what was done
+- After completing a task, always create a git commit with a concise message describing what was done, then push to remote
