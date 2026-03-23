@@ -112,13 +112,13 @@ Permanently deletes a tool by ID.
 #### `RunTool(input RunInput) (RunResult, error)`
 Executes a tool synchronously.
 
-**Parameter substitution:**
-- Replaces all `{{PARAM_NAME}}` occurrences in the script body with the corresponding value from `input.ParamValues` before execution.
+**Resolution order (applied strictly in sequence):**
 
-**Environment variable handling (both applied):**
-1. **Template substitution** — replaces all `{{ENV_KEY}}` occurrences in the script body with the value from `input.EnvVarValues`.
-2. **Process injection** — injects all key-value pairs from `input.EnvVarValues` into the subprocess's OS environment, so scripts can also access them via native shell syntax (`$env:KEY` in PowerShell, `%KEY%` in cmd).
-- `input.EnvVarValues` contains the user's run-time values (pre-filled from the tool's stored `EnvVars` defaults, then optionally edited by the user before running).
+1. **Env var substitution (global)** — replace all `{{ENV_KEY}}` occurrences everywhere: in the script body and inside any param values. This means a param value of `"{{BASE_URL}}/users"` will have `{{BASE_URL}}` resolved before the param itself is used.
+2. **Param substitution** — replace all `{{PARAM_NAME}}` occurrences in the script body with the (already env-var-resolved) values from `input.ParamValues`.
+3. **Process injection** — inject all key-value pairs from `input.EnvVarValues` into the subprocess's OS environment, so scripts can also access them via native shell syntax (`$env:KEY` in PowerShell, `%KEY%` in cmd).
+
+`input.EnvVarValues` contains the user's run-time values (pre-filled from the tool's stored `EnvVars` defaults, then optionally edited by the user before running).
 
 **Output & result:**
 - Captures stdout and stderr combined into `RunResult.Output`.
