@@ -1,7 +1,7 @@
 # Architecture — Zeonta v1
 
-Defines the system structure, layer boundaries, and data flow.
-Read alongside [ux.md](ux.md) (UI structure) and [prd.md](prd.md) (feature requirements).
+Defines the system structure, layer boundaries, storage design, and data flow.
+Read alongside [ux.md](ux.md) (UI/UX) and [api.md](api.md) (method contracts).
 
 ---
 
@@ -16,10 +16,10 @@ Read alongside [ux.md](ux.md) (UI structure) and [prd.md](prd.md) (feature requi
 │  │   React + MUI   │◄──────►│   app.go              │ │
 │  │   + Tailwind    │  Wails │                       │ │
 │  │                 │  IPC   │   internal/            │ │
-│  └─────────────────┘        │   └── store/          │ │
+│  └─────────────────┘        │   ├── store/          │ │
 │                             │   └── executor/       │ │
 │                             │                       │ │
-│                             │   scripts/ (stored)   │ │
+│                             │   zeonta.db (SQLite)  │ │
 │                             └──────────────────────┘ │
 └─────────────────────────────────────────────────────┘
 ```
@@ -28,128 +28,181 @@ Read alongside [ux.md](ux.md) (UI structure) and [prd.md](prd.md) (feature requi
 
 ---
 
-## Frontend Architecture
+## Directory Structure
 
-### Tech
-- React (functional components + hooks)
-- MUI for all interactive components (buttons, inputs, selects, panels)
-- Tailwind for layout, spacing, and sizing
-- No state management library — React `useState` / `useContext` is sufficient for v1
-
-### State Shape (app-level)
-
-```ts
-type AppState = {
-  tools: Tool[]               // all saved tools
-  selectedToolId: string | null
-  editPanelMode: 'hidden' | 'create' | 'edit' | 'run-params'
-  outputPanel: {
-    visible: boolean
-    toolName: string
-    output: string
-    exitCode: number | null
-    running: boolean
-  }
-}
 ```
-
-### Component Tree
-See [ux.md — Component Map](ux.md#component-map) for the full tree.
-
-### Frontend Rules
-- Components must not exceed ~150 lines — split if needed
-- No direct `fetch` or `XMLHttpRequest` — all data comes from Wails bindings
-- All Wails bindings are imported from `wailsjs/go/main/App`
-- Panel open/close state lives at the `App` level and is passed as props
+zeonta/
+├── main.go                  # Wails entry point — initializes app and store
+├── app.go                   # All Go methods exposed to the frontend via Wails
+├── internal/
+│   ├── store/
+│   │   ├── store.go         # Open DB, run schema migration, expose Store struct
+│   │   └── tools.go         # CRUD: ListTools, GetTool, CreateTool, UpdateTool, DeleteTool
+│   └── executor/
+│       └── executor.go      # Variable resolution, subprocess execution, output streaming
+├── frontend/
+│   └── src/
+│       ├── components/
+│       │   ├── Sidebar/
+│       │   │   ├── Sidebar.tsx
+│       │   │   ├── ToolList.tsx
+│       │   │   └── ToolListItem.tsx
+│       │   ├── ContentArea/
+│       │   │   ├── ContentArea.tsx
+│       │   │   ├── EmptyState.tsx
+│       │   │   └── ToolDetail.tsx
+│       │   ├── EditPanel/
+│       │   │   ├── EditPanel.tsx
+│       │   │   ├── ParamEditor.tsx
+│       │   │   └── EnvVarEditor.tsx
+│       │   └── OutputPanel/
+│       │       └── OutputPanel.tsx
+│       ├── types/
+│       │   └── tool.ts      # TypeScript types mirroring Go structs in api.md
+│       └── App.tsx          # Root layout: Sidebar + ContentArea + EditPanel + OutputPanel
+├── wailsjs/                 # Auto-generated — do not edit
+└── docs/                    # SDD specification documents
+```
 
 ---
 
 ## Backend Architecture
 
-### Packages
+### Layer Responsibilities
 
-```
-app.go              → All Go methods exposed to the frontend (Wails bindings)
-internal/
-  store/            → Reads and writes tool definitions to disk (JSON)
-  executor/         → Runs shell scripts and Go snippets, captures output
-scripts/            → Shell script files saved by the user, named by tool ID
-```
+| Layer | File(s) | Responsibility |
+|---|---|---|
+| Binding layer | `app.go` | Implements all methods from `api.md`; delegates to store and executor |
+| Storage layer | `internal/store/` | All SQLite reads and writes; no business logic |
+| Execution layer | `internal/executor/` | Variable resolution, temp file creation, subprocess execution, output streaming |
 
-### Data Model
+**Dependency rule:** `executor` and `store` must not import each other. Both are imported only by `app.go`.
 
-```go
-// Tool represents a user-defined runnable unit
-type Tool struct {
-    ID       string     `json:"id"`       // UUID
-    Name     string     `json:"name"`
-    Type     ToolType   `json:"type"`     // "shell" | "go"
-    Body     string     `json:"body"`     // script or Go function body
-    Params   []Param    `json:"params"`
-    EnvVars  []EnvVar   `json:"envVars"`
-}
+### `app.go`
+- Holds `*store.Store` and `*executor.Executor` as struct fields on `App`
+- Implements every method defined in `docs/api.md` with exactly those signatures
+- Returns human-readable errors — never raw Go or SQLite error strings
 
-type Param struct {
-    Name    string `json:"name"`
-    Default string `json:"default"`
-}
+### `internal/store`
+- Opens `%APPDATA%\Zeonta\zeonta.db` on startup, creating the file and directory if absent
+- Runs schema migrations (`CREATE TABLE IF NOT EXISTS`) on every startup
+- Never contains execution or business logic
 
-type EnvVar struct {
-    Key   string `json:"key"`
-    Value string `json:"value"`
-}
-
-type ToolType string
-const (
-    ToolTypeShell ToolType = "shell"
-    ToolTypeGo    ToolType = "go"
-)
-```
-
-### Storage
-- Tools are persisted as a single JSON file: `%APPDATA%\Zeonta\tools.json`
-- `internal/store` handles all read/write; `app.go` never touches the filesystem directly
-
-### Execution
-- Shell tools: write body to a temp `.ps1` or `.bat` file, execute via `exec.Command`, capture stdout+stderr
-- Go tools: v1 scope TBD — consider running as a subprocess via `go run` with a temp file
-- Parameters are substituted into the script body before execution
-- Env vars are injected into the command's environment
+### `internal/executor`
+- Receives a fully-loaded `Tool` and a `RunInput` from `app.go`
+- Performs variable resolution (see below)
+- Writes the resolved script to a temp file, executes it, streams output via Wails events
 
 ---
 
-## Data Flow — Run a Tool
+## Database
+
+**Driver:** `modernc.org/sqlite` (pure Go, no CGO, no C compiler required)
+
+**Location:** `%APPDATA%\Zeonta\zeonta.db`
+
+**Schema:**
+
+```sql
+CREATE TABLE IF NOT EXISTS tools (
+    id         TEXT    PRIMARY KEY,
+    name       TEXT    UNIQUE NOT NULL,
+    type       TEXT    NOT NULL,        -- "shell" | "go"
+    body       TEXT    NOT NULL,
+    created_at INTEGER NOT NULL         -- Unix timestamp
+);
+
+CREATE TABLE IF NOT EXISTS params (
+    id          TEXT    PRIMARY KEY,
+    tool_id     TEXT    NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+    name        TEXT    NOT NULL,
+    default_val TEXT    NOT NULL DEFAULT '',
+    sort_order  INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS env_vars (
+    id         TEXT    PRIMARY KEY,
+    tool_id    TEXT    NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+    key        TEXT    NOT NULL,
+    value      TEXT    NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL
+);
+```
+
+`ON DELETE CASCADE` ensures params and env vars are removed automatically when a tool is deleted.
+
+---
+
+## Frontend Architecture
+
+See [ux.md](ux.md) for the full component map, layout, and user flows.
+
+### State Shape (app-level, managed in `App.tsx`)
+
+```ts
+type AppState = {
+  tools: ToolSummary[]                          // sidebar list
+  selectedToolId: string | null
+  selectedTool: Tool | null                     // full detail of selected tool
+  editPanelMode: 'create' | 'edit' | 'run' | null
+  outputPanelOpen: boolean
+  outputLines: string[]                         // streamed via tool:output events
+  runResult: RunResult | null                   // set on tool:done event
+}
+```
+
+### Frontend Rules
+- No state management library — `useState` / `useReducer` at `App.tsx` level only
+- Components must not exceed ~150 lines — split if needed
+- No `fetch` or `XMLHttpRequest` — all data comes from Wails bindings in `wailsjs/`
+- Panel open/close state lives at the `App` level, passed as props
+
+---
+
+## Execution Flow
 
 ```
 User clicks "Run"
       │
       ▼
-Frontend: calls App.RunTool(toolID, paramValues)
+[If tool has params or env vars]
+EditPanel opens in run mode — pre-filled with stored defaults
+User reviews / edits values, clicks "Run Now"
       │
       ▼
-app.go: looks up tool from store
+Frontend calls RunTool({ toolId, paramValues, envVarValues })
       │
       ▼
-executor: substitutes params, injects env vars, executes script
-      │
-      ├── streams stdout/stderr back via Wails events
+app.go → loads Tool from store, passes to executor
       │
       ▼
-Frontend: OutputPanel receives events, appends to output log
+executor — variable resolution (strictly in order):
+  1. Replace {{ENV_KEY}} everywhere (script body + inside param values)
+  2. Replace {{PARAM_NAME}} in script body with resolved param values
+  3. Inject envVarValues into subprocess OS environment
       │
       ▼
-executor: returns exit code
+executor — write resolved script to temp file, start subprocess
+  (PowerShell for type=shell, `go run` for type=go)
+      │
+      ├── stream stdout+stderr chunks → emit tool:output events
       │
       ▼
-Frontend: OutputPanel shows exit code badge
+executor — subprocess exits → emit tool:done event with RunResult
+      │
+      ▼
+Frontend: OutputPanel displays streamed output + exit code badge
 ```
+
+**Note:** Edits made in the Run Panel are one-time overrides. They are never saved back to the tool definition. To change defaults, the user uses the Edit flow.
 
 ---
 
-## Key Constraints (from constitution.md)
+## Key Constraints
 
-- Binary ≤ 10MB — avoid heavy Go dependencies
+- Binary target: Windows only, `wails build -platform windows/amd64`
+- Binary size ≤ 10MB — avoid heavy dependencies
 - No network calls anywhere in the codebase
 - `wailsjs/` is auto-generated — never edit manually
 - Each frontend feature maps to exactly one Go method on `App`
-- All file I/O goes through `internal/store`, not inline in `app.go`
+- All DB access goes through `internal/store`, never inline in `app.go`
