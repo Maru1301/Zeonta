@@ -200,8 +200,8 @@ Frontend: OutputPanel displays streamed output + exit code badge
 
 ## Key Constraints
 
-- Binary target: Windows only, `wails build -platform windows/amd64`
-- Binary size ≤ 10MB — avoid heavy dependencies
+- Binary target: Windows only, `wails build -platform windows/amd64 -ldflags "-s -w"`
+- Binary size: ~14MB in practice — `modernc.org/sqlite` (pure Go, no CGO) contributes ~8MB; this supersedes the original 10MB target which was set before SQLite was chosen
 - No network calls anywhere in the codebase
 - `wailsjs/` is auto-generated — never edit manually
 - Each frontend feature maps to exactly one Go method on `App`
