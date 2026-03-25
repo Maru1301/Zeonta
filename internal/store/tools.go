@@ -24,14 +24,6 @@ type Param struct {
 	SortOrder  int    `json:"sortOrder"`
 }
 
-// EnvVar is a key-value pair injected into the tool's execution environment.
-type EnvVar struct {
-	ID        string `json:"id"`
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	SortOrder int    `json:"sortOrder"`
-}
-
 // Tool is the complete definition of a user-created runnable unit.
 type Tool struct {
 	ID        string   `json:"id"`
@@ -40,7 +32,6 @@ type Tool struct {
 	Body      string   `json:"body"`
 	Desc      string   `json:"desc"`
 	Params    []Param  `json:"params"`
-	EnvVars   []EnvVar `json:"envVars"`
 	CreatedAt int64    `json:"createdAt"`
 }
 
@@ -89,10 +80,6 @@ func (s *Store) GetTool(id string) (Tool, error) {
 	if err != nil {
 		return Tool{}, err
 	}
-	t.EnvVars, err = s.getEnvVars(id)
-	if err != nil {
-		return Tool{}, err
-	}
 	return t, nil
 }
 
@@ -121,9 +108,6 @@ func (s *Store) CreateTool(tool Tool) (Tool, error) {
 	}
 
 	if err := insertParams(tx, tool.ID, tool.Params); err != nil {
-		return Tool{}, err
-	}
-	if err := insertEnvVars(tx, tool.ID, tool.EnvVars); err != nil {
 		return Tool{}, err
 	}
 
@@ -155,14 +139,8 @@ func (s *Store) UpdateTool(tool Tool) (Tool, error) {
 	if _, err := tx.Exec(`DELETE FROM params WHERE tool_id=?`, tool.ID); err != nil {
 		return Tool{}, fmt.Errorf("clear params: %w", err)
 	}
-	if _, err := tx.Exec(`DELETE FROM env_vars WHERE tool_id=?`, tool.ID); err != nil {
-		return Tool{}, fmt.Errorf("clear env vars: %w", err)
-	}
 
 	if err := insertParams(tx, tool.ID, tool.Params); err != nil {
-		return Tool{}, err
-	}
-	if err := insertEnvVars(tx, tool.ID, tool.EnvVars); err != nil {
 		return Tool{}, err
 	}
 
@@ -203,26 +181,6 @@ func (s *Store) getParams(toolID string) ([]Param, error) {
 	return params, nil
 }
 
-func (s *Store) getEnvVars(toolID string) ([]EnvVar, error) {
-	rows, err := s.db.Query(
-		`SELECT id, key, value, sort_order FROM env_vars WHERE tool_id=? ORDER BY sort_order`, toolID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("get env vars: %w", err)
-	}
-	defer rows.Close()
-
-	envVars := []EnvVar{}
-	for rows.Next() {
-		var e EnvVar
-		if err := rows.Scan(&e.ID, &e.Key, &e.Value, &e.SortOrder); err != nil {
-			return nil, err
-		}
-		envVars = append(envVars, e)
-	}
-	return envVars, nil
-}
-
 func insertParams(tx *sql.Tx, toolID string, params []Param) error {
 	for i, p := range params {
 		if p.ID == "" {
@@ -234,22 +192,6 @@ func insertParams(tx *sql.Tx, toolID string, params []Param) error {
 		)
 		if err != nil {
 			return fmt.Errorf("insert param: %w", err)
-		}
-	}
-	return nil
-}
-
-func insertEnvVars(tx *sql.Tx, toolID string, envVars []EnvVar) error {
-	for i, e := range envVars {
-		if e.ID == "" {
-			e.ID = uuid.NewString()
-		}
-		_, err := tx.Exec(
-			`INSERT INTO env_vars (id, tool_id, key, value, sort_order) VALUES (?, ?, ?, ?, ?)`,
-			e.ID, toolID, e.Key, e.Value, i,
-		)
-		if err != nil {
-			return fmt.Errorf("insert env var: %w", err)
 		}
 	}
 	return nil

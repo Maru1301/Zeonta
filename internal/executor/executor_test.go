@@ -12,11 +12,9 @@ func TestResolveEnvVarsInBody(t *testing.T) {
 		Type: store.ToolTypeShell,
 		Body: "echo {{BASE_URL}}",
 	}
-	input := RunInput{
-		EnvVarValues: map[string]string{"BASE_URL": "https://example.com"},
-	}
+	envVars := map[string]string{"BASE_URL": "https://example.com"}
 
-	result := Run(tool, input, nil)
+	result := Run(tool, RunInput{}, envVars, nil)
 	if result.Error != "" {
 		t.Fatalf("unexpected error: %s", result.Error)
 	}
@@ -28,17 +26,17 @@ func TestResolveEnvVarsInBody(t *testing.T) {
 func TestResolveEnvVarsInsideParamValues(t *testing.T) {
 	tool := store.Tool{
 		Type: store.ToolTypeShell,
-		Body: "echo {{ENDPOINT}}",
+		Body: "echo [[ENDPOINT]]",
 		Params: []store.Param{
 			{Name: "ENDPOINT", DefaultVal: "{{BASE_URL}}/users"},
 		},
 	}
 	input := RunInput{
-		ParamValues:  map[string]string{"ENDPOINT": "{{BASE_URL}}/users"},
-		EnvVarValues: map[string]string{"BASE_URL": "https://example.com"},
+		ParamValues: map[string]string{"ENDPOINT": "{{BASE_URL}}/users"},
 	}
+	envVars := map[string]string{"BASE_URL": "https://example.com"}
 
-	result := Run(tool, input, nil)
+	result := Run(tool, input, envVars, nil)
 	if result.Error != "" {
 		t.Fatalf("unexpected error: %s", result.Error)
 	}
@@ -50,7 +48,7 @@ func TestResolveEnvVarsInsideParamValues(t *testing.T) {
 func TestResolveParamInBody(t *testing.T) {
 	tool := store.Tool{
 		Type: store.ToolTypeShell,
-		Body: "echo {{GREETING}}",
+		Body: "echo [[GREETING]]",
 		Params: []store.Param{
 			{Name: "GREETING", DefaultVal: "hello"},
 		},
@@ -59,7 +57,7 @@ func TestResolveParamInBody(t *testing.T) {
 		ParamValues: map[string]string{"GREETING": "world"},
 	}
 
-	result := Run(tool, input, nil)
+	result := Run(tool, input, nil, nil)
 	if result.Error != "" {
 		t.Fatalf("unexpected error: %s", result.Error)
 	}
@@ -73,7 +71,7 @@ func TestNonZeroExitCode(t *testing.T) {
 		Type: store.ToolTypeShell,
 		Body: "exit 1",
 	}
-	result := Run(tool, RunInput{}, nil)
+	result := Run(tool, RunInput{}, nil, nil)
 
 	// Non-zero exit is NOT a Go-level error — it appears in ExitCode
 	if result.Error != "" {
@@ -180,7 +178,7 @@ func TestEmitCalledPerLine(t *testing.T) {
 	}
 
 	var lines []string
-	Run(tool, RunInput{}, func(line string) {
+	Run(tool, RunInput{}, nil, func(line string) {
 		lines = append(lines, line)
 	})
 

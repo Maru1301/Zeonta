@@ -65,16 +65,70 @@ func (a *App) DeleteTool(id string) error {
 }
 
 // RunTool executes a tool, streaming output via Wails events.
+// Env vars are sourced from the currently active environment set.
 func (a *App) RunTool(input executor.RunInput) executor.RunResult {
 	tool, err := a.store.GetTool(input.ToolID)
 	if err != nil {
 		return executor.RunResult{Error: "tool not found"}
 	}
 
-	result := executor.Run(tool, input, func(line string) {
+	envVars := a.store.GetActiveEnvVars()
+
+	result := executor.Run(tool, input, envVars, func(line string) {
 		runtime.EventsEmit(a.ctx, "tool:output", line)
 	})
 
 	runtime.EventsEmit(a.ctx, "tool:done", result)
 	return result
+}
+
+// --- Environment methods ---
+
+// ListEnvironments returns all environment sets as summaries.
+func (a *App) ListEnvironments() []store.EnvironmentSummary {
+	return a.store.ListEnvironments()
+}
+
+// GetEnvironment returns the full definition of a single environment set.
+func (a *App) GetEnvironment(id string) (store.Environment, error) {
+	e, err := a.store.GetEnvironment(id)
+	if err != nil {
+		return store.Environment{}, fmt.Errorf("could not load environment: %w", err)
+	}
+	return e, nil
+}
+
+// CreateEnvironment saves a new environment set and returns it with its assigned ID.
+func (a *App) CreateEnvironment(env store.Environment) (store.Environment, error) {
+	created, err := a.store.CreateEnvironment(env)
+	if err != nil {
+		return store.Environment{}, fmt.Errorf("could not create environment: %w", err)
+	}
+	return created, nil
+}
+
+// UpdateEnvironment overwrites an existing environment set by ID.
+func (a *App) UpdateEnvironment(env store.Environment) (store.Environment, error) {
+	updated, err := a.store.UpdateEnvironment(env)
+	if err != nil {
+		return store.Environment{}, fmt.Errorf("could not update environment: %w", err)
+	}
+	return updated, nil
+}
+
+// DeleteEnvironment permanently removes an environment set by ID.
+func (a *App) DeleteEnvironment(id string) error {
+	if err := a.store.DeleteEnvironment(id); err != nil {
+		return fmt.Errorf("could not delete environment: %w", err)
+	}
+	return nil
+}
+
+// SetActiveEnvironment marks the given environment as active and deactivates all others.
+// Pass an empty string to deactivate all environments.
+func (a *App) SetActiveEnvironment(id string) error {
+	if err := a.store.SetActiveEnvironment(id); err != nil {
+		return fmt.Errorf("could not set active environment: %w", err)
+	}
+	return nil
 }

@@ -25,9 +25,6 @@ func TestCreateAndGetTool(t *testing.T) {
 		Params: []Param{
 			{Name: "NAME", DefaultVal: "world"},
 		},
-		EnvVars: []EnvVar{
-			{Key: "ENV_VAR", Value: "value"},
-		},
 	}
 
 	created, err := s.CreateTool(tool)
@@ -47,9 +44,6 @@ func TestCreateAndGetTool(t *testing.T) {
 	}
 	if len(got.Params) != 1 || got.Params[0].Name != "NAME" {
 		t.Errorf("params mismatch: %+v", got.Params)
-	}
-	if len(got.EnvVars) != 1 || got.EnvVars[0].Key != "ENV_VAR" {
-		t.Errorf("env vars mismatch: %+v", got.EnvVars)
 	}
 }
 
@@ -125,7 +119,7 @@ func TestDeleteTool_NotFound(t *testing.T) {
 	}
 }
 
-func TestGetTool_EmptySlicesNotNil(t *testing.T) {
+func TestGetTool_EmptyParamsNotNil(t *testing.T) {
 	s := openTestStore(t)
 	created, err := s.CreateTool(Tool{Name: "no-params", Type: ToolTypeShell, Body: "echo"})
 	if err != nil {
@@ -137,9 +131,6 @@ func TestGetTool_EmptySlicesNotNil(t *testing.T) {
 	}
 	if got.Params == nil {
 		t.Error("Params should be an empty slice, not nil")
-	}
-	if got.EnvVars == nil {
-		t.Error("EnvVars should be an empty slice, not nil")
 	}
 }
 

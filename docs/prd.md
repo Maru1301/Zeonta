@@ -34,7 +34,7 @@ As a user, I can define named input parameters for a tool — so that I can pass
 **Acceptance criteria:**
 - ✅ Within the tool form, user can add one or more named parameters
 - ✅ Each parameter has: a name and an optional default value
-- ✅ Parameters are referenced inside the script body by name (e.g. `$PARAM_NAME`)
+- ✅ Parameters are referenced inside the script body using `[[PARAM_NAME]]` syntax
 - ✅ At run time, user is prompted to fill in parameter values before execution
 - ✅ If a default value exists, it is pre-filled in the run prompt
 
@@ -46,12 +46,12 @@ As a user, I can define named input parameters for a tool — so that I can pass
 As a user, I can create named sets of environment variables (e.g. "Dev", "Prod") and pick one as active — so that all tools automatically run with the correct environment without me editing each tool individually.
 
 **Acceptance criteria:**
-- [ ] User can create, rename, and delete named environment sets
-- [ ] Each environment set holds an arbitrary number of key-value pairs
-- [ ] Exactly one environment set can be marked as active at a time (or none)
-- [ ] When a tool runs, the active environment's key-value pairs are injected into the subprocess and resolved in the script body via `{{KEY}}` syntax
-- [ ] Tools no longer have per-tool env var definitions or run-time env var editing
-- [ ] Switching the active environment requires no changes to individual tools
+- ✅ User can create, rename, and delete named environment sets
+- ✅ Each environment set holds an arbitrary number of key-value pairs
+- ✅ Exactly one environment set can be marked as active at a time (or none)
+- ✅ When a tool runs, the active environment's key-value pairs are injected into the subprocess and resolved in the script body via `{{KEY}}` syntax
+- ✅ Tools no longer have per-tool env var definitions or run-time env var editing
+- ✅ Switching the active environment requires no changes to individual tools
 
 ---
 

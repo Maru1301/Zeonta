@@ -31,12 +31,18 @@ CREATE TABLE IF NOT EXISTS params (
     sort_order  INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS env_vars (
-    id         TEXT    PRIMARY KEY,
-    tool_id    TEXT    NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
-    key        TEXT    NOT NULL,
-    value      TEXT    NOT NULL DEFAULT '',
-    sort_order INTEGER NOT NULL
+CREATE TABLE IF NOT EXISTS environments (
+    id        TEXT    PRIMARY KEY,
+    name      TEXT    UNIQUE NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS env_entries (
+    id             TEXT    PRIMARY KEY,
+    environment_id TEXT    NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
+    key            TEXT    NOT NULL,
+    value          TEXT    NOT NULL DEFAULT '',
+    sort_order     INTEGER NOT NULL
 );
 
 PRAGMA foreign_keys = ON;

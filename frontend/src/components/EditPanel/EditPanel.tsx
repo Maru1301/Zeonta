@@ -5,10 +5,9 @@ import {
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { CreateTool, UpdateTool, RunTool } from '../../../wailsjs/go/main/App'
-import type { Tool, Param, EnvVar, ToolType } from '../../types/tool'
+import type { Tool, Param, ToolType } from '../../types/tool'
 import type { EditPanelMode } from '../../App'
 import ParamEditor from './ParamEditor'
-import EnvVarEditor from './EnvVarEditor'
 
 interface Props {
   mode: EditPanelMode
@@ -24,24 +23,18 @@ export default function EditPanel({ mode, tool, onSaved, onRunStart, onClose }: 
   const [body, setBody] = useState('')
   const [desc, setDesc] = useState('')
   const [params, setParams] = useState<Param[]>([])
-  const [envVars, setEnvVars] = useState<EnvVar[]>([])
   const [paramValues, setParamValues] = useState<Record<string, string>>({})
-  const [envVarValues, setEnvVarValues] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (mode === 'create') {
-      setName(''); setType('shell'); setBody(''); setDesc(''); setParams([]); setEnvVars([])
+      setName(''); setType('shell'); setBody(''); setDesc(''); setParams([])
     } else if (tool && (mode === 'edit' || mode === 'run')) {
       setName(tool.name); setType(tool.type as ToolType); setBody(tool.body); setDesc(tool.desc)
-      setParams(tool.params); setEnvVars(tool.envVars)
-      // pre-fill run values from defaults
+      setParams(tool.params)
       const pv: Record<string, string> = {}
       tool.params.forEach(p => { pv[p.name] = p.default })
       setParamValues(pv)
-      const ev: Record<string, string> = {}
-      tool.envVars.forEach(e => { ev[e.key] = e.value })
-      setEnvVarValues(ev)
     }
     setError('')
   }, [mode, tool])
@@ -49,10 +42,10 @@ export default function EditPanel({ mode, tool, onSaved, onRunStart, onClose }: 
   const handleSave = async () => {
     try {
       if (mode === 'create') {
-        const created = await CreateTool({ id: '', name, type, body, desc, params, envVars, createdAt: 0 } as any)
+        const created = await CreateTool({ id: '', name, type, body, desc, params, createdAt: 0 } as any)
         onSaved(created.id)
       } else if (mode === 'edit' && tool) {
-        const updated = await UpdateTool({ ...tool, name, type, body, desc, params, envVars } as any)
+        const updated = await UpdateTool({ ...tool, name, type, body, desc, params } as any)
         onSaved(updated.id)
       }
     } catch (e: any) {
@@ -63,7 +56,7 @@ export default function EditPanel({ mode, tool, onSaved, onRunStart, onClose }: 
   const handleRunNow = async () => {
     if (!tool) return
     onRunStart()
-    await RunTool({ toolId: tool.id, paramValues, envVarValues })
+    await RunTool({ toolId: tool.id, paramValues })
   }
 
   const isRun = mode === 'run'
@@ -132,42 +125,26 @@ export default function EditPanel({ mode, tool, onSaved, onRunStart, onClose }: 
               inputProps={{ style: { fontFamily: '"JetBrains Mono", "Fira Code", monospace', fontSize: 13 } }}
             />
             <ParamEditor params={params} onChange={setParams} />
-            <EnvVarEditor envVars={envVars} onChange={setEnvVars} />
           </>
         )}
 
-        {isRun && (
-          <>
-            {params.length > 0 && (
-              <Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-                  Parameters
-                </Typography>
-                {params.map(p => (
-                  <TextField
-                    key={p.id || p.name}
-                    label={`{{${p.name}}}`}
-                    size="small"
-                    fullWidth
-                    value={paramValues[p.name] ?? p.default}
-                    onChange={e => setParamValues(prev => ({ ...prev, [p.name]: e.target.value }))}
-                    sx={{ mb: 1 }}
-                  />
-                ))}
-              </Box>
-            )}
-            {envVars.length > 0 && (
-              <EnvVarEditor
-                envVars={envVars.map(e => ({ ...e, value: envVarValues[e.key] ?? e.value }))}
-                onChange={updated => {
-                  const ev: Record<string, string> = {}
-                  updated.forEach(e => { ev[e.key] = e.value })
-                  setEnvVarValues(ev)
-                }}
-                readonlyKeys
+        {isRun && params.length > 0 && (
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+              Parameters
+            </Typography>
+            {params.map(p => (
+              <TextField
+                key={p.id || p.name}
+                label={`[[${p.name}]]`}
+                size="small"
+                fullWidth
+                value={paramValues[p.name] ?? p.default}
+                onChange={e => setParamValues(prev => ({ ...prev, [p.name]: e.target.value }))}
+                sx={{ mb: 1 }}
               />
-            )}
-          </>
+            ))}
+          </Box>
         )}
       </Box>
 

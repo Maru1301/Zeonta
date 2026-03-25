@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ThemeProvider, CssBaseline, Box } from '@mui/material'
 import { EventsOn } from '../wailsjs/runtime/runtime'
-import { ListTools, GetTool, RunTool } from '../wailsjs/go/main/App'
+import { ListTools, GetTool, RunTool, ListEnvironments } from '../wailsjs/go/main/App'
 import theme from './theme'
-import type { Tool, ToolSummary, RunResult } from './types/tool'
+import type { Tool, ToolSummary, RunResult, EnvironmentSummary } from './types/tool'
 import Sidebar from './components/Sidebar/Sidebar'
 import ContentArea from './components/ContentArea/ContentArea'
 import EditPanel from './components/EditPanel/EditPanel'
 import OutputPanel from './components/OutputPanel/OutputPanel'
+import EnvironmentPanel from './components/Environments/EnvironmentPanel'
 
 export type EditPanelMode = 'create' | 'edit' | 'run' | null
 
@@ -19,15 +20,23 @@ export default function App() {
   const [outputPanelOpen, setOutputPanelOpen] = useState(false)
   const [outputLines, setOutputLines] = useState<string[]>([])
   const [runResult, setRunResult] = useState<RunResult | null>(null)
+  const [environmentPanelOpen, setEnvironmentPanelOpen] = useState(false)
+  const [activeEnvironment, setActiveEnvironment] = useState<EnvironmentSummary | null>(null)
 
   const refreshTools = useCallback(async () => {
     const list = await ListTools()
     setTools(list ?? [])
   }, [])
 
+  const refreshActiveEnvironment = useCallback(async () => {
+    const list = await ListEnvironments()
+    setActiveEnvironment((list ?? []).find(e => e.isActive) ?? null)
+  }, [])
+
   useEffect(() => {
     refreshTools()
-  }, [refreshTools])
+    refreshActiveEnvironment()
+  }, [refreshTools, refreshActiveEnvironment])
 
   useEffect(() => {
     const offOutput = EventsOn('tool:output', (line: string) => {
@@ -79,8 +88,10 @@ export default function App() {
         <Sidebar
           tools={tools}
           selectedToolId={selectedToolId}
+          activeEnvironment={activeEnvironment}
           onSelectTool={selectTool}
           onNewTool={() => { setSelectedTool(null); setEditPanelMode('create') }}
+          onManageEnvironments={() => setEnvironmentPanelOpen(true)}
         />
 
         <Box className="flex flex-col flex-1 overflow-hidden">
@@ -89,12 +100,12 @@ export default function App() {
               tool={selectedTool}
               onEdit={() => setEditPanelMode('edit')}
               onRun={() => {
-                if (selectedTool && ((selectedTool.params ?? []).length > 0 || (selectedTool.envVars ?? []).length > 0)) {
+                if (selectedTool && (selectedTool.params ?? []).length > 0) {
                   setEditPanelMode('run')
                 } else {
                   handleRunStart()
                   if (selectedTool) {
-                    RunTool({ toolId: selectedTool.id, paramValues: {}, envVarValues: {} })
+                    RunTool({ toolId: selectedTool.id, paramValues: {} })
                   }
                 }
               }}
@@ -118,6 +129,13 @@ export default function App() {
             onSaved={handleToolSaved}
             onRunStart={handleRunStart}
             onClose={() => setEditPanelMode(null)}
+          />
+        )}
+
+        {environmentPanelOpen && (
+          <EnvironmentPanel
+            onClose={() => setEnvironmentPanelOpen(false)}
+            onActiveChanged={refreshActiveEnvironment}
           />
         )}
       </Box>

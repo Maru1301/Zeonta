@@ -1,16 +1,19 @@
 import { Box, Button, Typography, Divider } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import type { ToolSummary } from '../../types/tool'
+import LayersIcon from '@mui/icons-material/Layers'
+import type { ToolSummary, EnvironmentSummary } from '../../types/tool'
 import ToolList from './ToolList'
 
 interface Props {
   tools: ToolSummary[]
   selectedToolId: string | null
+  activeEnvironment: EnvironmentSummary | null
   onSelectTool: (id: string) => void
   onNewTool: () => void
+  onManageEnvironments: () => void
 }
 
-export default function Sidebar({ tools, selectedToolId, onSelectTool, onNewTool }: Props) {
+export default function Sidebar({ tools, selectedToolId, activeEnvironment, onSelectTool, onNewTool, onManageEnvironments }: Props) {
   return (
     <Box
       sx={{
@@ -64,6 +67,24 @@ export default function Sidebar({ tools, selectedToolId, onSelectTool, onNewTool
             No tools yet. Click "New Tool" to get started.
           </Typography>
         )}
+      </Box>
+
+      {/* Environment indicator */}
+      <Divider />
+      <Box sx={{ px: 1.5, py: 1 }}>
+        <Button
+          fullWidth
+          size="small"
+          startIcon={<LayersIcon fontSize="small" />}
+          onClick={onManageEnvironments}
+          sx={{
+            justifyContent: 'flex-start',
+            color: activeEnvironment ? '#7c6af7' : 'text.secondary',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          {activeEnvironment ? `ENV: ${activeEnvironment.name}` : 'No Environment'}
+        </Button>
       </Box>
     </Box>
   )

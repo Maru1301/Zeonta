@@ -111,7 +111,7 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
             {(tool.params ?? []).map(p => (
               <Box key={p.id} className="flex gap-3" sx={{ mb: 0.5 }}>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#7c6af7' }}>
-                  {`{{${p.name}}}`}
+                  {`[[${p.name}]]`}
                 </Typography>
                 {p.default && (
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -124,26 +124,6 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
         </>
       )}
 
-      {/* Env vars */}
-      {(tool.envVars ?? []).length > 0 && (
-        <>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-            Environment Variables
-          </Typography>
-          <Box>
-            {(tool.envVars ?? []).map(e => (
-              <Box key={e.id} className="flex gap-3" sx={{ mb: 0.5 }}>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#63b3ed' }}>
-                  {e.key}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  = {e.value}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </>
-      )}
     </Box>
   )
 }

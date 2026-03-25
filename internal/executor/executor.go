@@ -108,9 +108,8 @@ func splitTopLevel(body string) (decls, stmts string) {
 
 // RunInput carries the values the user provided at run time.
 type RunInput struct {
-	ToolID       string            `json:"toolId"`
-	ParamValues  map[string]string `json:"paramValues"`
-	EnvVarValues map[string]string `json:"envVarValues"`
+	ToolID      string            `json:"toolId"`
+	ParamValues map[string]string `json:"paramValues"`
 }
 
 // RunResult is returned after execution completes.
@@ -121,9 +120,14 @@ type RunResult struct {
 }
 
 // Run executes a tool with the given input.
+// envVars is the active environment's key-value pairs, resolved from the store by the caller.
 // emit is called for each line of output during execution.
-func Run(tool store.Tool, input RunInput, emit func(string)) RunResult {
-	// Step 1: resolve {{ENV_KEY}} everywhere (script body + param values)
+//
+// Resolution syntax:
+//   - {{KEY}}   — replaced with the value from the active environment set
+//   - [[PARAM]] — replaced with the user-provided parameter value (or its default)
+func Run(tool store.Tool, input RunInput, envVars map[string]string, emit func(string)) RunResult {
+	// Step 1: resolve {{ENV_KEY}} in the script body
 	resolvedBody := tool.Body
 	resolvedParams := make(map[string]string)
 
@@ -132,25 +136,25 @@ func Run(tool store.Tool, input RunInput, emit func(string)) RunResult {
 		if !ok {
 			val = p.DefaultVal
 		}
-		// resolve env vars inside param values
-		for k, v := range input.EnvVarValues {
+		// resolve env vars inside param default values
+		for k, v := range envVars {
 			val = strings.ReplaceAll(val, "{{"+k+"}}", v)
 		}
 		resolvedParams[p.Name] = val
 	}
 
-	for k, v := range input.EnvVarValues {
+	for k, v := range envVars {
 		resolvedBody = strings.ReplaceAll(resolvedBody, "{{"+k+"}}", v)
 	}
 
-	// Step 2: resolve {{PARAM_NAME}} in script body
+	// Step 2: resolve [[PARAM_NAME]] in script body
 	for name, val := range resolvedParams {
-		resolvedBody = strings.ReplaceAll(resolvedBody, "{{"+name+"}}", val)
+		resolvedBody = strings.ReplaceAll(resolvedBody, "[["+name+"]]", val)
 	}
 
-	// Step 3: build env for subprocess (inherit OS env + tool env vars)
+	// Step 3: build env for subprocess (inherit OS env + active environment vars)
 	env := os.Environ()
-	for k, v := range input.EnvVarValues {
+	for k, v := range envVars {
 		env = append(env, k+"="+v)
 	}
 
