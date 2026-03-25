@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Box, Typography, Chip, Button, Divider, IconButton } from '@mui/material'
+import { Box, Typography, Chip, Button, Divider, IconButton, TextField } from '@mui/material'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -11,13 +11,18 @@ import type { Tool } from '../../types/tool'
 interface Props {
   tool: Tool
   onEdit: () => void
-  onRun: () => void
+  onRun: (paramValues: Record<string, string>) => void
   onDeleted: () => void
 }
 
 export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
+  const [paramValues, setParamValues] = useState<Record<string, string>>(() => {
+    const pv: Record<string, string> = {}
+    ;(tool.params ?? []).forEach(p => { pv[p.name] = p.default })
+    return pv
+  })
 
   const handleDelete = async () => {
     try {
@@ -45,7 +50,7 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
         </Box>
 
         <Box className="flex gap-1">
-          <Button size="small" variant="contained" startIcon={<PlayArrowIcon />} onClick={onRun}>
+          <Button size="small" variant="contained" startIcon={<PlayArrowIcon />} onClick={() => onRun(paramValues)}>
             Run
           </Button>
           <IconButton size="small" onClick={onEdit} sx={{ color: 'text.secondary' }}>
@@ -109,16 +114,15 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
           </Typography>
           <Box sx={{ mb: 3 }}>
             {(tool.params ?? []).map(p => (
-              <Box key={p.id} className="flex gap-3" sx={{ mb: 0.5 }}>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#7c6af7' }}>
-                  {`[[${p.name}]]`}
-                </Typography>
-                {p.default && (
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    default: {p.default}
-                  </Typography>
-                )}
-              </Box>
+              <TextField
+                key={p.id || p.name}
+                label={`[[${p.name}]]`}
+                size="small"
+                fullWidth
+                value={paramValues[p.name] ?? p.default}
+                onChange={e => setParamValues(prev => ({ ...prev, [p.name]: e.target.value }))}
+                sx={{ mb: 1 }}
+              />
             ))}
           </Box>
         </>

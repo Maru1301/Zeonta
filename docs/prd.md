@@ -62,7 +62,7 @@ As a user, I can select a tool and run it from the UI — so that I get the outp
 
 **Acceptance criteria:**
 - ✅ Each tool in the list has a "Run" action
-- ✅ If the tool has parameters, a prompt appears for the user to fill values before execution
+- ✅ If the tool has parameters, editable input fields are shown inline in the Tool Detail view, pre-filled with defaults
 - ✅ Execution output (stdout + stderr) is displayed inline in the UI
 - ✅ If execution fails, the exit code and error output are shown clearly
 - ✅ The UI remains responsive during execution (no freezing)

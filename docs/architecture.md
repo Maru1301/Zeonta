@@ -36,8 +36,9 @@ zeonta/
 ├── app.go                   # All Go methods exposed to the frontend via Wails
 ├── internal/
 │   ├── store/
-│   │   ├── store.go         # Open DB, run schema migration, expose Store struct
-│   │   └── tools.go         # CRUD: ListTools, GetTool, CreateTool, UpdateTool, DeleteTool
+│   │   ├── store.go            # Open DB, run schema migration, expose Store struct
+│   │   ├── tools.go            # CRUD: ListTools, GetTool, CreateTool, UpdateTool, DeleteTool
+│   │   └── environments.go     # CRUD + SetActiveEnvironment, GetActiveEnvVars
 │   └── executor/
 │       └── executor.go      # Variable resolution, subprocess execution, output streaming
 ├── frontend/
@@ -53,8 +54,9 @@ zeonta/
 │       │   │   └── ToolDetail.tsx
 │       │   ├── EditPanel/
 │       │   │   ├── EditPanel.tsx
-│       │   │   ├── ParamEditor.tsx
-│       │   │   └── EnvVarEditor.tsx
+│       │   │   └── ParamEditor.tsx
+│       │   ├── Environments/
+│       │   │   └── EnvironmentPanel.tsx
 │       │   └── OutputPanel/
 │       │       └── OutputPanel.tsx
 │       ├── types/
@@ -120,16 +122,22 @@ CREATE TABLE IF NOT EXISTS params (
     sort_order  INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS env_vars (
-    id         TEXT    PRIMARY KEY,
-    tool_id    TEXT    NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
-    key        TEXT    NOT NULL,
-    value      TEXT    NOT NULL DEFAULT '',
-    sort_order INTEGER NOT NULL
+CREATE TABLE IF NOT EXISTS environments (
+    id        TEXT    PRIMARY KEY,
+    name      TEXT    UNIQUE NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS env_entries (
+    id             TEXT    PRIMARY KEY,
+    environment_id TEXT    NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
+    key            TEXT    NOT NULL,
+    value          TEXT    NOT NULL DEFAULT '',
+    sort_order     INTEGER NOT NULL
 );
 ```
 
-`ON DELETE CASCADE` ensures params and env vars are removed automatically when a tool is deleted.
+`ON DELETE CASCADE` ensures params are removed when a tool is deleted, and env entries are removed when their environment is deleted.
 
 ---
 
@@ -144,10 +152,12 @@ type AppState = {
   tools: ToolSummary[]                          // sidebar list
   selectedToolId: string | null
   selectedTool: Tool | null                     // full detail of selected tool
-  editPanelMode: 'create' | 'edit' | 'run' | null
+  editPanelMode: 'create' | 'edit' | null
   outputPanelOpen: boolean
   outputLines: string[]                         // streamed via tool:output events
   runResult: RunResult | null                   // set on tool:done event
+  environmentPanelOpen: boolean
+  activeEnvironment: EnvironmentSummary | null
 }
 ```
 
@@ -162,24 +172,18 @@ type AppState = {
 ## Execution Flow
 
 ```
-User clicks "Run"
+User edits param inputs inline in Tool Detail (pre-filled with defaults), clicks "Run"
       │
       ▼
-[If tool has params or env vars]
-EditPanel opens in run mode — pre-filled with stored defaults
-User reviews / edits values, clicks "Run Now"
+Frontend calls RunTool({ toolId, paramValues })
       │
       ▼
-Frontend calls RunTool({ toolId, paramValues, envVarValues })
-      │
-      ▼
-app.go → loads Tool from store, passes to executor
+app.go → loads Tool from store, calls GetActiveEnvVars(), passes both to executor
       │
       ▼
 executor — variable resolution (strictly in order):
-  1. Replace {{ENV_KEY}} everywhere (script body + inside param values)
-  2. Replace {{PARAM_NAME}} in script body with resolved param values
-  3. Inject envVarValues into subprocess OS environment
+  1. Replace {{ENV_KEY}} in script body using active environment's key-value pairs
+  2. Replace [[PARAM_NAME]] in script body with user-supplied param values
       │
       ▼
 executor — write resolved script to temp file, start subprocess
@@ -194,7 +198,7 @@ executor — subprocess exits → emit tool:done event with RunResult
 Frontend: OutputPanel displays streamed output + exit code badge
 ```
 
-**Note:** Edits made in the Run Panel are one-time overrides. They are never saved back to the tool definition. To change defaults, the user uses the Edit flow.
+**Note:** Param values entered in the Tool Detail view are one-time overrides and are never saved back to the tool definition. To change defaults, the user uses the Edit flow.
 
 ---
 

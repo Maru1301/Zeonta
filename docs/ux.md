@@ -61,8 +61,8 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 | Panel | Purpose |
 |---|---|
 | **Sidebar** | Lists all saved tools; button to create new tool |
-| **Content Area** | Displays selected tool's detail: name, type, script preview, params, env vars, Run button |
-| **Edit Panel** | Slides in from right for create/edit; overlays content area partially |
+| **Content Area** | Displays selected tool's detail: name, type, script preview, inline param inputs, Run button |
+| **Edit Panel** | Slides in from right for create/edit only; overlays content area partially |
 | **Output Panel** | Slides up from bottom when tool is run; shows stdout/stderr with exit code |
 
 ---
@@ -75,7 +75,7 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 [Sidebar: click "+ New Tool"]
         ↓
 [Edit Panel slides in from right — blank form]
-  Fields: Name, Type (shell/Go), Script Body, Parameters, Env Vars
+  Fields: Name, Type (shell/Go), Script Body, Parameters
         ↓
 [User fills form, clicks "Save"]
         ↓
@@ -97,12 +97,17 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 [Content Area refreshes with updated values]
 ```
 
-### Flow 3 — Run a Tool (no parameters, no env vars)
+### Flow 3 — Run a Tool
+
+Parameter inputs (if any) are shown inline in the Tool Detail view, pre-filled with their stored defaults.
+The user edits values directly and clicks "Run" — no separate panel is opened.
 
 ```
-[Content Area: click "Run"]
+[Content Area: edit any parameter inputs (pre-filled with defaults)]
         ↓
-[Output Panel slides up — shows "Running..."]
+[Click "Run"]
+        ↓
+[Output Panel slides up — execution begins immediately with the current input values]
         ↓
 [stdout/stderr stream in as execution progresses]
         ↓
@@ -110,34 +115,8 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 [Output remains visible until user dismisses or runs again]
 ```
 
-### Flow 4 — Run a Tool (has parameters and/or env vars)
-
-The Edit Panel opens as a "Run Panel" — same panel used for editing,
-but in run mode. It shows two sections: Parameters and Environment Variables.
-Both are pre-filled with their stored default values. The user reviews,
-edits any values (Postman-style), then confirms.
-
-```
-[Content Area: click "Run"]
-        ↓
-[Edit Panel slides in — "Run: <tool name>" title]
-  Section 1 — Parameters (if any):
-    Each param shown as a labeled input, pre-filled with its default value
-  Section 2 — Environment Variables (if any):
-    Each env var shown as a key + editable value row, pre-filled with stored value
-    Values support {{VAR}} references to other env vars (resolved top-to-bottom)
-        ↓
-[User reviews / edits values, clicks "Run Now"]
-        ↓
-[Edit Panel closes]
-[Output Panel slides up — execution begins with the user-provided values]
-        ↓
-[stdout/stderr stream in, exit code shown on completion]
-```
-
-> **Note:** Edits made in the Run Panel are **not** saved back to the tool definition.
-> They are one-time overrides for this execution only. To change the defaults,
-> the user must use the Edit flow (Flow 2).
+> **Note:** Parameter values edited in the Tool Detail view are **not** saved back to the tool definition.
+> They are one-time overrides for this execution. To change the defaults, use the Edit flow (Flow 2).
 
 ### Flow 5 — Delete a Tool
 
@@ -162,17 +141,14 @@ App
 ├── ContentArea
 │   ├── EmptyState (shown when no tool selected)
 │   └── ToolDetail
-│       ├── ToolHeader (name, type badge, Edit + Delete buttons)
+│       ├── ToolHeader (name, type badge, Edit + Delete + Run buttons)
 │       ├── ScriptPreview (read-only code block)
-│       ├── ParamList (read-only list of defined params)
-│       ├── EnvVarList (read-only list of env vars)
-│       └── RunButton
-├── EditPanel (conditionally rendered, slides in from right)
+│       └── ParamInputs (editable TextField per param, pre-filled with defaults)
+├── EditPanel (conditionally rendered for create/edit only, slides in from right)
 │   ├── ToolNameField
 │   ├── ToolTypeSelector (shell / Go)
 │   ├── ScriptEditor (multiline code input)
 │   ├── ParamEditor (add/remove named params with defaults)
-│   ├── EnvVarEditor (add/remove key-value pairs)
 │   └── SaveButton / CancelButton
 └── OutputPanel (conditionally rendered, slides up from bottom)
     ├── OutputHeader (tool name, exit code badge, Close button)
@@ -189,6 +165,5 @@ App
 | Tool selected | Sidebar + Tool Detail |
 | Creating new tool | Sidebar + Tool Detail (or Empty) + Edit Panel (blank) |
 | Editing tool | Sidebar + Tool Detail + Edit Panel (pre-filled) |
-| Running (no params) | Sidebar + Tool Detail + Output Panel open |
-| Running (with params/env vars) | Sidebar + Tool Detail + Edit Panel in run mode (params + env vars pre-filled) → then Output Panel open |
+| Running | Sidebar + Tool Detail (with param inputs) + Output Panel open |
 | Confirm delete | Inline confirmation within Tool Detail |

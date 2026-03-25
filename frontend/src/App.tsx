@@ -10,7 +10,7 @@ import EditPanel from './components/EditPanel/EditPanel'
 import OutputPanel from './components/OutputPanel/OutputPanel'
 import EnvironmentPanel from './components/Environments/EnvironmentPanel'
 
-export type EditPanelMode = 'create' | 'edit' | 'run' | null
+export type EditPanelMode = 'create' | 'edit' | null
 
 export default function App() {
   const [tools, setTools] = useState<ToolSummary[]>([])
@@ -99,14 +99,10 @@ export default function App() {
             <ContentArea
               tool={selectedTool}
               onEdit={() => setEditPanelMode('edit')}
-              onRun={() => {
-                if (selectedTool && (selectedTool.params ?? []).length > 0) {
-                  setEditPanelMode('run')
-                } else {
-                  handleRunStart()
-                  if (selectedTool) {
-                    RunTool({ toolId: selectedTool.id, paramValues: {} })
-                  }
+              onRun={(paramValues) => {
+                handleRunStart()
+                if (selectedTool) {
+                  RunTool({ toolId: selectedTool.id, paramValues })
                 }
               }}
               onDeleted={handleToolDeleted}
@@ -127,7 +123,6 @@ export default function App() {
             mode={editPanelMode}
             tool={selectedTool}
             onSaved={handleToolSaved}
-            onRunStart={handleRunStart}
             onClose={() => setEditPanelMode(null)}
           />
         )}

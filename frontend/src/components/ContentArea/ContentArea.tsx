@@ -6,7 +6,7 @@ import ToolDetail from './ToolDetail'
 interface Props {
   tool: Tool | null
   onEdit: () => void
-  onRun: () => void
+  onRun: (paramValues: Record<string, string>) => void
   onDeleted: () => void
 }
 
