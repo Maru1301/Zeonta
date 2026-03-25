@@ -192,7 +192,7 @@ func (s *Store) getParams(toolID string) ([]Param, error) {
 	}
 	defer rows.Close()
 
-	var params []Param
+	params := []Param{}
 	for rows.Next() {
 		var p Param
 		if err := rows.Scan(&p.ID, &p.Name, &p.DefaultVal, &p.SortOrder); err != nil {
@@ -212,7 +212,7 @@ func (s *Store) getEnvVars(toolID string) ([]EnvVar, error) {
 	}
 	defer rows.Close()
 
-	var envVars []EnvVar
+	envVars := []EnvVar{}
 	for rows.Next() {
 		var e EnvVar
 		if err := rows.Scan(&e.ID, &e.Key, &e.Value, &e.SortOrder); err != nil {

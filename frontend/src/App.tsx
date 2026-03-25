@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ThemeProvider, CssBaseline, Box } from '@mui/material'
 import { EventsOn } from '../wailsjs/runtime/runtime'
-import { ListTools, GetTool } from '../wailsjs/go/main/App'
+import { ListTools, GetTool, RunTool } from '../wailsjs/go/main/App'
 import theme from './theme'
 import type { Tool, ToolSummary, RunResult } from './types/tool'
 import Sidebar from './components/Sidebar/Sidebar'
@@ -30,12 +30,16 @@ export default function App() {
   }, [refreshTools])
 
   useEffect(() => {
-    EventsOn('tool:output', (line: string) => {
+    const offOutput = EventsOn('tool:output', (line: string) => {
       setOutputLines(prev => [...prev, line])
     })
-    EventsOn('tool:done', (result: RunResult) => {
+    const offDone = EventsOn('tool:done', (result: RunResult) => {
       setRunResult(result)
     })
+    return () => {
+      offOutput()
+      offDone()
+    }
   }, [])
 
   const selectTool = useCallback(async (id: string) => {
@@ -85,10 +89,13 @@ export default function App() {
               tool={selectedTool}
               onEdit={() => setEditPanelMode('edit')}
               onRun={() => {
-                if (selectedTool && (selectedTool.params.length > 0 || selectedTool.envVars.length > 0)) {
+                if (selectedTool && ((selectedTool.params ?? []).length > 0 || (selectedTool.envVars ?? []).length > 0)) {
                   setEditPanelMode('run')
                 } else {
                   handleRunStart()
+                  if (selectedTool) {
+                    RunTool({ toolId: selectedTool.id, paramValues: {}, envVarValues: {} })
+                  }
                 }
               }}
               onDeleted={handleToolDeleted}

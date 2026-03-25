@@ -125,6 +125,24 @@ func TestDeleteTool_NotFound(t *testing.T) {
 	}
 }
 
+func TestGetTool_EmptySlicesNotNil(t *testing.T) {
+	s := openTestStore(t)
+	created, err := s.CreateTool(Tool{Name: "no-params", Type: ToolTypeShell, Body: "echo"})
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	got, err := s.GetTool(created.ID)
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if got.Params == nil {
+		t.Error("Params should be an empty slice, not nil")
+	}
+	if got.EnvVars == nil {
+		t.Error("EnvVars should be an empty slice, not nil")
+	}
+}
+
 func TestDescLengthConstraint(t *testing.T) {
 	s := openTestStore(t)
 	longDesc := string(make([]rune, 301))
