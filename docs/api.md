@@ -34,7 +34,18 @@ type Tool struct {
     ID      string   `json:"id"`      // UUID, assigned on creation
     Name    string   `json:"name"`    // user-defined, must be unique
     Type    ToolType `json:"type"`
-    Body    string   `json:"body"`    // raw script or Go function body
+    Body    string   `json:"body"`    // raw script or Go function body.
+                                      // For Go tools: if the body does not begin with "package",
+                                      // it is treated as a snippet and automatically wrapped:
+                                      //   - Optional import block at the top is preserved.
+                                      //   - Top-level declarations (func, type, var, const) are
+                                      //     placed outside func main().
+                                      //   - Remaining statements go inside func main().
+                                      //   - If the snippet already defines func main(), no extra
+                                      //     func main() is added.
+                                      // Snippet mode supports stdlib only — no go.mod is created.
+                                      // For third-party packages, start the body with "package main"
+                                      // to use full-file mode.
     Params  []Param  `json:"params"`  // may be empty
     EnvVars []EnvVar `json:"envVars"` // may be empty
 }

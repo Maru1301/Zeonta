@@ -84,6 +84,95 @@ func TestNonZeroExitCode(t *testing.T) {
 	}
 }
 
+func TestWrapGoSnippet_PlainBody(t *testing.T) {
+	out := wrapGoSnippet(`fmt.Println("hello")`)
+	if !strings.Contains(out, "package main") {
+		t.Error("expected package main")
+	}
+	if !strings.Contains(out, "func main()") {
+		t.Error("expected func main()")
+	}
+	if !strings.Contains(out, `fmt.Println("hello")`) {
+		t.Error("expected body inside func main")
+	}
+	if strings.Contains(out, "import") {
+		t.Error("expected no import block for plain body")
+	}
+}
+
+func TestWrapGoSnippet_WithSingleImport(t *testing.T) {
+	body := "import \"fmt\"\nfmt.Println(\"hello\")"
+	out := wrapGoSnippet(body)
+	if !strings.Contains(out, "package main") {
+		t.Error("expected package main")
+	}
+	if !strings.Contains(out, "import \"fmt\"") {
+		t.Error("expected import line preserved")
+	}
+	if !strings.Contains(out, "func main()") {
+		t.Error("expected func main()")
+	}
+	if !strings.Contains(out, `fmt.Println("hello")`) {
+		t.Error("expected body inside func main")
+	}
+}
+
+func TestWrapGoSnippet_WithMultiImport(t *testing.T) {
+	body := "import (\n\t\"fmt\"\n\t\"os\"\n)\nfmt.Println(os.Args)"
+	out := wrapGoSnippet(body)
+	if !strings.Contains(out, "package main") {
+		t.Error("expected package main")
+	}
+	if !strings.Contains(out, "import (") {
+		t.Error("expected multi-line import block preserved")
+	}
+	if !strings.Contains(out, "func main()") {
+		t.Error("expected func main()")
+	}
+	if !strings.Contains(out, "fmt.Println(os.Args)") {
+		t.Error("expected body inside func main")
+	}
+}
+
+func TestWrapGoSnippet_FullFile(t *testing.T) {
+	body := "package main\n\nfunc main() {\n\tprintln(\"full\")\n}\n"
+	out := wrapGoSnippet(body)
+	if out != body {
+		t.Errorf("full-file body should be returned unchanged, got:\n%s", out)
+	}
+}
+
+func TestWrapGoSnippet_TopLevelFunc(t *testing.T) {
+	body := "import \"fmt\"\nfunc plus() {\n\tfmt.Println(1 + 2)\n}\nplus()"
+	out := wrapGoSnippet(body)
+	if !strings.Contains(out, "package main") {
+		t.Error("expected package main")
+	}
+	// func plus must be outside func main
+	plusIdx := strings.Index(out, "func plus(")
+	mainIdx := strings.Index(out, "func main(")
+	if plusIdx == -1 {
+		t.Error("expected func plus in output")
+	}
+	if mainIdx == -1 {
+		t.Error("expected func main in output")
+	}
+	if plusIdx > mainIdx {
+		t.Error("func plus should appear before func main")
+	}
+	if !strings.Contains(out, "plus()") {
+		t.Error("expected plus() call inside func main")
+	}
+}
+
+func TestWrapGoSnippet_SnippetWithOwnMain(t *testing.T) {
+	body := "func main() {\n\tprintln(\"hi\")\n}"
+	out := wrapGoSnippet(body)
+	if strings.Count(out, "func main(") != 1 {
+		t.Errorf("expected exactly one func main, got:\n%s", out)
+	}
+}
+
 func TestEmitCalledPerLine(t *testing.T) {
 	tool := store.Tool{
 		Type: store.ToolTypeShell,

@@ -97,10 +97,10 @@ As a user, I can permanently delete a tool I no longer need — so that the tool
 As a user, I can write just the body of a Go function as my tool — so that I don't have to write `package main`, imports, or a `func main()` wrapper every time.
 
 **Acceptance criteria:**
-- [ ] If the Go tool body does not begin with `package`, the executor treats it as a snippet and automatically wraps it in `package main` + `func main() { ... }`
-- [ ] Users may optionally include an `import (...)` block at the top of their snippet; the executor injects it correctly into the wrapped file
-- [ ] If the body already begins with `package`, it is executed as-is (full-file mode, backward compatible)
-- [ ] Snippet mode and full-file mode are distinguished automatically — no extra toggle needed in the UI
+- ✅ If the Go tool body does not begin with `package`, the executor treats it as a snippet and automatically wraps it in `package main` + `func main() { ... }`
+- ✅ Users may optionally include an `import (...)` block at the top of their snippet; the executor injects it correctly into the wrapped file
+- ✅ If the body already begins with `package`, it is executed as-is (full-file mode, backward compatible)
+- ✅ Snippet mode and full-file mode are distinguished automatically — no extra toggle needed in the UI
 
 ---
 
