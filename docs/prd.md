@@ -40,15 +40,18 @@ As a user, I can define named input parameters for a tool — so that I can pass
 
 ---
 
-### F3 — Environment Variable Definition
+### F3 — Environment Sets *(supersedes per-tool env vars)*
 
 **User story:**
-As a user, I can define key-value environment variables for a tool — so that the script runs with the correct environment without me setting them globally on my system.
+As a user, I can create named sets of environment variables (e.g. "Dev", "Prod") and pick one as active — so that all tools automatically run with the correct environment without me editing each tool individually.
 
 **Acceptance criteria:**
-- ✅ Within the tool form, user can add one or more key-value env var pairs
-- ✅ Env vars are injected into the execution environment when the tool runs
-- ✅ Env vars are stored per tool and do not affect other tools or the system environment
+- [ ] User can create, rename, and delete named environment sets
+- [ ] Each environment set holds an arbitrary number of key-value pairs
+- [ ] Exactly one environment set can be marked as active at a time (or none)
+- [ ] When a tool runs, the active environment's key-value pairs are injected into the subprocess and resolved in the script body via `{{KEY}}` syntax
+- [ ] Tools no longer have per-tool env var definitions or run-time env var editing
+- [ ] Switching the active environment requires no changes to individual tools
 
 ---
 
