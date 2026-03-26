@@ -25,7 +25,7 @@ export default function Sidebar({
   return (
     <Box
       sx={{
-        width: 240,
+        width: 260,
         flexShrink: 0,
         bgcolor: 'background.paper',
         borderRight: '1px solid',
@@ -36,8 +36,8 @@ export default function Sidebar({
       }}
     >
       {/* Header */}
-      <Box sx={{ px: 2, py: 1.5 }}>
-        <Typography variant="subtitle2" sx={{ color: 'text.secondary', letterSpacing: '0.05em', fontSize: 11, textTransform: 'uppercase' }}>
+      <Box sx={{ px: 2.5, py: 2 }}>
+        <Typography variant="subtitle2" sx={{ color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           Zeonta
         </Typography>
       </Box>
@@ -45,7 +45,7 @@ export default function Sidebar({
       <Divider />
 
       {/* New Tool + Import/Export */}
-      <Box sx={{ px: 1.5, py: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <Box sx={{ px: 1.5, py: 1.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Button
           fullWidth
           size="small"
@@ -89,7 +89,7 @@ export default function Sidebar({
           onSelectTool={onSelectTool}
         />
         {tools.length === 0 && (
-          <Typography variant="caption" sx={{ display: 'block', px: 2, py: 2, color: '#555' }}>
+          <Typography variant="body2" sx={{ display: 'block', px: 2.5, py: 2.5, color: '#555' }}>
             No tools yet. Click "New Tool" to get started.
           </Typography>
         )}
@@ -97,7 +97,7 @@ export default function Sidebar({
 
       {/* Environment indicator */}
       <Divider />
-      <Box sx={{ px: 1.5, py: 1 }}>
+      <Box sx={{ px: 1.5, py: 1.5 }}>
         <Button
           fullWidth
           size="small"

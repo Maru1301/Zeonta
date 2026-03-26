@@ -19,7 +19,7 @@ export default function ParamEditor({ params, onChange }: Props) {
 
   return (
     <Box>
-      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+      <Typography variant="body2" sx={{ color: 'text.secondary', display: 'block', mb: 1.5, fontWeight: 500 }}>
         Parameters
       </Typography>
       {params.map((p, i) => (
