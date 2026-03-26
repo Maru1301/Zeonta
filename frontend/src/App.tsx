@@ -35,20 +35,45 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    refreshTools()
-    refreshActiveEnvironment()
+    let retryTimer: ReturnType<typeof setTimeout>
+    const init = async () => {
+      try {
+        await refreshTools()
+        await refreshActiveEnvironment()
+      } catch {
+        // Wails bridge not ready yet (dev hot-reload race) — retry shortly
+        retryTimer = setTimeout(init, 100)
+      }
+    }
+    init()
+    return () => clearTimeout(retryTimer)
   }, [refreshTools, refreshActiveEnvironment])
 
   useEffect(() => {
-    const offOutput = EventsOn('tool:output', (line: string) => {
-      setOutputLines(prev => [...prev, line])
-    })
-    const offDone = EventsOn('tool:done', (result: RunResult) => {
-      setRunResult(result)
-    })
+    let offOutput: (() => void) | undefined
+    let offDone: (() => void) | undefined
+    let retryTimer: ReturnType<typeof setTimeout>
+
+    const register = () => {
+      try {
+        offOutput = EventsOn('tool:output', (line: string) => {
+          setOutputLines(prev => [...prev, line])
+        })
+        offDone = EventsOn('tool:done', (result: RunResult) => {
+          setRunResult(result)
+        })
+      } catch {
+        // Wails bridge not ready yet (dev hot-reload race) — retry shortly
+        retryTimer = setTimeout(register, 100)
+      }
+    }
+
+    register()
+
     return () => {
-      offOutput()
-      offDone()
+      clearTimeout(retryTimer)
+      offOutput?.()
+      offDone?.()
     }
   }, [])
 
