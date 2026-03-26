@@ -1,0 +1,71 @@
+package store
+
+import (
+	"database/sql"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	_ "modernc.org/sqlite"
+)
+
+type Store struct {
+	db *sql.DB
+}
+
+const schema = `
+CREATE TABLE IF NOT EXISTS tools (
+    id         TEXT    PRIMARY KEY,
+    name       TEXT    UNIQUE NOT NULL,
+    type       TEXT    NOT NULL,
+    body       TEXT    NOT NULL,
+    desc       TEXT    NOT NULL DEFAULT '' CHECK(length(desc) <= 300),
+    created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS params (
+    id          TEXT    PRIMARY KEY,
+    tool_id     TEXT    NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+    name        TEXT    NOT NULL,
+    default_val TEXT    NOT NULL DEFAULT '',
+    sort_order  INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS environments (
+    id        TEXT    PRIMARY KEY,
+    name      TEXT    UNIQUE NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS env_entries (
+    id             TEXT    PRIMARY KEY,
+    environment_id TEXT    NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
+    key            TEXT    NOT NULL,
+    value          TEXT    NOT NULL DEFAULT '',
+    sort_order     INTEGER NOT NULL
+);
+
+PRAGMA foreign_keys = ON;
+`
+
+func Open(path string) (*Store, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return nil, fmt.Errorf("create data directory: %w", err)
+	}
+
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+
+	if _, err := db.Exec(schema); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("run migrations: %w", err)
+	}
+
+	return &Store{db: db}, nil
+}
+
+func (s *Store) Close() error {
+	return s.db.Close()
+}

@@ -1,0 +1,86 @@
+import { useEffect, useRef } from 'react'
+import { Box, Typography, Chip, IconButton, Divider } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
+import type { Tool, RunResult } from '../../types/tool'
+
+interface Props {
+  tool: Tool | null
+  lines: string[]
+  result: RunResult | null
+  onClose: () => void
+}
+
+export default function OutputPanel({ tool, lines, result, onClose }: Props) {
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [lines])
+
+  const running = result === null
+  const exitCode = result?.exitCode ?? null
+
+  return (
+    <Box
+      sx={{
+        height: '35%',
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        bgcolor: '#111',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header */}
+      <Box className="flex items-center justify-between" sx={{ px: 2, py: 1, flexShrink: 0 }}>
+        <Box className="flex items-center gap-2">
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {tool?.name ?? 'Output'}
+          </Typography>
+          {running && (
+            <Chip label="running" size="small" sx={{ height: 16, fontSize: 10, bgcolor: 'rgba(251,191,36,0.15)', color: '#fbbf24' }} />
+          )}
+          {!running && exitCode !== null && (
+            <Chip
+              label={exitCode === 0 ? 'exit 0' : `exit ${exitCode}`}
+              size="small"
+              sx={{
+                height: 16,
+                fontSize: 10,
+                bgcolor: exitCode === 0 ? 'rgba(34,197,94,0.15)' : 'rgba(248,113,113,0.15)',
+                color: exitCode === 0 ? '#4ade80' : '#f87171',
+              }}
+            />
+          )}
+        </Box>
+        <IconButton size="small" onClick={onClose} sx={{ color: 'text.secondary' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
+
+      <Divider />
+
+      {/* Output body */}
+      <Box
+        sx={{
+          flex: 1,
+          overflowY: 'auto',
+          px: 2,
+          py: 1,
+          fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+          fontSize: 12,
+          color: '#dcdcdc',
+          lineHeight: 1.6,
+        }}
+      >
+        {lines.map((line, i) => (
+          <Box key={i} component="div">{line || '\u00A0'}</Box>
+        ))}
+        {result?.error && (
+          <Box sx={{ color: '#f87171', mt: 1 }}>{result.error}</Box>
+        )}
+        <div ref={bottomRef} />
+      </Box>
+    </Box>
+  )
+}

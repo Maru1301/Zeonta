@@ -1,0 +1,18 @@
+# Dependencies
+frontend/node_modules/
+
+# Build outputs
+build/bin/
+frontend/dist/
+
+# Wails generated bindings
+wailsjs/
+
+# Go test cache
+*.test
+
+# OS
+.DS_Store
+Thumbs.db
+
+.claude/

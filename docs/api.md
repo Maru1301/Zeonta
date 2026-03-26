@@ -23,20 +23,24 @@ type Param struct {
     Default string `json:"default"` // empty string if no default
 }
 
-// EnvVar is a key-value pair injected into the tool's execution environment
-type EnvVar struct {
-    Key   string `json:"key"`
-    Value string `json:"value"`
-}
-
 // Tool is the complete definition of a user-created runnable unit
 type Tool struct {
     ID      string   `json:"id"`      // UUID, assigned on creation
     Name    string   `json:"name"`    // user-defined, must be unique
     Type    ToolType `json:"type"`
-    Body    string   `json:"body"`    // raw script or Go function body
+    Body    string   `json:"body"`    // raw script or Go function body.
+                                      // For Go tools: if the body does not begin with "package",
+                                      // it is treated as a snippet and automatically wrapped:
+                                      //   - Optional import block at the top is preserved.
+                                      //   - Top-level declarations (func, type, var, const) are
+                                      //     placed outside func main().
+                                      //   - Remaining statements go inside func main().
+                                      //   - If the snippet already defines func main(), no extra
+                                      //     func main() is added.
+                                      // Snippet mode supports stdlib only — no go.mod is created.
+                                      // For third-party packages, start the body with "package main"
+                                      // to use full-file mode.
     Params  []Param  `json:"params"`  // may be empty
-    EnvVars []EnvVar `json:"envVars"` // may be empty
 }
 
 // ToolSummary is the lightweight version used in the sidebar list
@@ -44,14 +48,44 @@ type ToolSummary struct {
     ID   string   `json:"id"`
     Name string   `json:"name"`
     Type ToolType `json:"type"`
+    Desc string   `json:"desc"`
+}
+
+// ImportSummary reports the outcome of an ImportTools call.
+type ImportSummary struct {
+    Imported int      `json:"imported"` // number of tools successfully created
+    Skipped  []string `json:"skipped"`  // names skipped due to conflicts or parse errors
+}
+
+// EnvEntry is a single key-value pair within an environment set.
+type EnvEntry struct {
+    ID        string `json:"id"`
+    Key       string `json:"key"`
+    Value     string `json:"value"`
+    SortOrder int    `json:"sortOrder"`
+}
+
+// Environment is a named set of key-value pairs activated globally.
+// Exactly one environment may be active at a time; all tools run against it.
+type Environment struct {
+    ID       string     `json:"id"`
+    Name     string     `json:"name"`     // user-defined, must be unique
+    IsActive bool       `json:"isActive"`
+    Entries  []EnvEntry `json:"entries"`  // may be empty
+}
+
+// EnvironmentSummary is the lightweight version used in the sidebar.
+type EnvironmentSummary struct {
+    ID       string `json:"id"`
+    Name     string `json:"name"`
+    IsActive bool   `json:"isActive"`
 }
 
 // RunInput carries the values the user provided at run time.
-// Both ParamValues and EnvVarValues are editable by the user before execution.
 type RunInput struct {
-    ToolID       string            `json:"toolId"`
-    ParamValues  map[string]string `json:"paramValues"`  // key = Param.Name
-    EnvVarValues map[string]string `json:"envVarValues"` // key = EnvVar.Key, overrides tool-definition defaults at run time
+    ToolID      string            `json:"toolId"`
+    ParamValues map[string]string `json:"paramValues"` // key = Param.Name
+    // Env vars are sourced automatically from the active environment set — not provided by the caller.
 }
 
 // RunResult is returned after execution completes
@@ -107,18 +141,97 @@ Permanently deletes a tool by ID.
 
 ---
 
+### Environment Management
+
+#### `ListEnvironments() []EnvironmentSummary`
+Returns all environment sets ordered by creation time. Never returns null.
+
+---
+
+#### `GetEnvironment(id string) (Environment, error)`
+Returns the full definition of a single environment set including all entries.
+
+---
+
+#### `CreateEnvironment(env Environment) (Environment, error)`
+Saves a new environment set. Assigns a UUID to `env.ID`.
+- Returns an error if `env.Name` is empty or already taken.
+
+---
+
+#### `UpdateEnvironment(env Environment) (Environment, error)`
+Overwrites an existing environment set by ID. Replaces all entries.
+- Returns an error if the ID does not exist or the new name conflicts.
+
+---
+
+#### `DeleteEnvironment(id string) error`
+Permanently deletes an environment set and all its entries.
+
+---
+
+#### `SetActiveEnvironment(id string) error`
+Marks the given environment as active and deactivates all others.
+Pass an empty string `""` to deactivate all environments (no active environment).
+
+---
+
+### Import / Export
+
+#### `ExportTools(ids []string) (bool, error)`
+Opens a native save dialog and writes the selected tools to a JSON file.
+
+- `ids` is the list of tool IDs to include. The caller provides this after the user selects tools in the Export Panel.
+- Returns `true` if the file was written, `false` if the user cancelled the save dialog.
+- Returns an error if the dialog fails or the file cannot be written.
+
+**Export file format:**
+```json
+{
+  "version": "0.1.0",
+  "tools": [
+    { "name": "...", "type": "shell|go", "body": "...", "desc": "...", "params": [...] }
+  ]
+}
+```
+IDs and timestamps are excluded — they are regenerated on import.
+
+---
+
+#### `ImportTools() (ImportSummary, error)`
+Opens a native multi-file picker and imports tools from the selected files.
+
+Supported file types:
+
+| Extension | Behaviour |
+|---|---|
+| `.json` | Parsed as a Zeonta export file; imports all tools inside |
+| `.ps1`, `.bat` | Creates one shell tool; name derived from filename; body = file contents |
+| `.go` | Creates one Go tool; name derived from filename; body = file contents |
+
+- Tools whose names already exist are skipped; their names are added to `Skipped`.
+- Files that cannot be read or parsed are skipped; the filename is added to `Skipped`.
+- Returns an empty `ImportSummary` (not an error) if the user cancels.
+
+---
+
 ### Execution
 
 #### `RunTool(input RunInput) (RunResult, error)`
 Executes a tool synchronously.
 
+**Template syntax:**
+
+| Syntax | Resolved from | Example |
+|---|---|---|
+| `{{KEY}}` | Active environment set | `{{BASE_URL}}` |
+| `[[PARAM]]` | User-provided parameter value | `[[GREETING]]` |
+
 **Resolution order (applied strictly in sequence):**
 
-1. **Env var substitution (global)** — replace all `{{ENV_KEY}}` occurrences everywhere: in the script body and inside any param values. This means a param value of `"{{BASE_URL}}/users"` will have `{{BASE_URL}}` resolved before the param itself is used.
-2. **Param substitution** — replace all `{{PARAM_NAME}}` occurrences in the script body with the (already env-var-resolved) values from `input.ParamValues`.
-3. **Process injection** — inject all key-value pairs from `input.EnvVarValues` into the subprocess's OS environment, so scripts can also access them via native shell syntax (`$env:KEY` in PowerShell, `%KEY%` in cmd).
-
-`input.EnvVarValues` contains the user's run-time values (pre-filled from the tool's stored `EnvVars` defaults, then optionally edited by the user before running).
+1. **Env var substitution** — replace all `{{KEY}}` occurrences in the script body and inside param default values, using the active environment's entries.
+2. **Param substitution** — replace all `[[PARAM]]` occurrences in the script body with the (already env-var-resolved) values from `input.ParamValues`.
+3. **Process injection** — inject all active environment entries into the subprocess's OS environment, accessible via native shell syntax (`$env:KEY` in PowerShell).
 
 **Output & result:**
 - Captures stdout and stderr combined into `RunResult.Output`.
@@ -144,7 +257,8 @@ Emitted by the backend during execution. The frontend listens with `EventsOn`.
 
 ```ts
 import {
-  ListTools, GetTool, CreateTool, UpdateTool, DeleteTool, RunTool
+  ListTools, GetTool, CreateTool, UpdateTool, DeleteTool, RunTool,
+  ExportTools, ImportTools,
 } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime";
 
@@ -155,24 +269,25 @@ const summaries = await ListTools();
 const tool = await GetTool(id);
 
 // Create a new tool
-const saved = await CreateTool({ name, type, body, params, envVars });
+const saved = await CreateTool({ name, type, body, desc, params });
 
 // Update an existing tool
-const updated = await UpdateTool({ id, name, type, body, params, envVars });
+const updated = await UpdateTool({ id, name, type, body, desc, params });
 
 // Delete a tool
 await DeleteTool(id);
 
 // Run a tool and stream output
-// EnvVarValues is pre-filled from the tool's stored EnvVars defaults, then
-// shown to the user in the Edit Panel for optional editing before execution.
+// Env vars are sourced automatically from the active environment — not passed by the caller.
 EventsOn("tool:output", (chunk: string) => appendToOutputPanel(chunk));
 EventsOn("tool:done",   (result)       => showExitCode(result.exitCode));
-await RunTool({
-  toolId: id,
-  paramValues:  { PARAM_NAME: "value" },
-  envVarValues: { BASE_URL: "https://example.com", API_KEY: "abc123" },
-});
+await RunTool({ toolId: id, paramValues: { PARAM_NAME: "value" } });
+
+// Export selected tools (returns false if user cancelled the save dialog)
+const didExport = await ExportTools(["id1", "id2"]);
+
+// Import from one or more files (returns empty summary if cancelled)
+const { imported, skipped } = await ImportTools();
 ```
 
 ---
