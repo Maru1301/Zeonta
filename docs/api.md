@@ -23,12 +23,6 @@ type Param struct {
     Default string `json:"default"` // empty string if no default
 }
 
-// EnvVar is a key-value pair injected into the tool's execution environment
-type EnvVar struct {
-    Key   string `json:"key"`
-    Value string `json:"value"`
-}
-
 // Tool is the complete definition of a user-created runnable unit
 type Tool struct {
     ID      string   `json:"id"`      // UUID, assigned on creation
@@ -54,6 +48,13 @@ type ToolSummary struct {
     ID   string   `json:"id"`
     Name string   `json:"name"`
     Type ToolType `json:"type"`
+    Desc string   `json:"desc"`
+}
+
+// ImportSummary reports the outcome of an ImportTools call.
+type ImportSummary struct {
+    Imported int      `json:"imported"` // number of tools successfully created
+    Skipped  []string `json:"skipped"`  // names skipped due to conflicts or parse errors
 }
 
 // EnvEntry is a single key-value pair within an environment set.
@@ -175,6 +176,45 @@ Pass an empty string `""` to deactivate all environments (no active environment)
 
 ---
 
+### Import / Export
+
+#### `ExportTools(ids []string) (bool, error)`
+Opens a native save dialog and writes the selected tools to a JSON file.
+
+- `ids` is the list of tool IDs to include. The caller provides this after the user selects tools in the Export Panel.
+- Returns `true` if the file was written, `false` if the user cancelled the save dialog.
+- Returns an error if the dialog fails or the file cannot be written.
+
+**Export file format:**
+```json
+{
+  "version": "0.1.0",
+  "tools": [
+    { "name": "...", "type": "shell|go", "body": "...", "desc": "...", "params": [...] }
+  ]
+}
+```
+IDs and timestamps are excluded — they are regenerated on import.
+
+---
+
+#### `ImportTools() (ImportSummary, error)`
+Opens a native multi-file picker and imports tools from the selected files.
+
+Supported file types:
+
+| Extension | Behaviour |
+|---|---|
+| `.json` | Parsed as a Zeonta export file; imports all tools inside |
+| `.ps1`, `.bat` | Creates one shell tool; name derived from filename; body = file contents |
+| `.go` | Creates one Go tool; name derived from filename; body = file contents |
+
+- Tools whose names already exist are skipped; their names are added to `Skipped`.
+- Files that cannot be read or parsed are skipped; the filename is added to `Skipped`.
+- Returns an empty `ImportSummary` (not an error) if the user cancels.
+
+---
+
 ### Execution
 
 #### `RunTool(input RunInput) (RunResult, error)`
@@ -217,7 +257,8 @@ Emitted by the backend during execution. The frontend listens with `EventsOn`.
 
 ```ts
 import {
-  ListTools, GetTool, CreateTool, UpdateTool, DeleteTool, RunTool
+  ListTools, GetTool, CreateTool, UpdateTool, DeleteTool, RunTool,
+  ExportTools, ImportTools,
 } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime";
 
@@ -228,24 +269,25 @@ const summaries = await ListTools();
 const tool = await GetTool(id);
 
 // Create a new tool
-const saved = await CreateTool({ name, type, body, params, envVars });
+const saved = await CreateTool({ name, type, body, desc, params });
 
 // Update an existing tool
-const updated = await UpdateTool({ id, name, type, body, params, envVars });
+const updated = await UpdateTool({ id, name, type, body, desc, params });
 
 // Delete a tool
 await DeleteTool(id);
 
 // Run a tool and stream output
-// EnvVarValues is pre-filled from the tool's stored EnvVars defaults, then
-// shown to the user in the Edit Panel for optional editing before execution.
+// Env vars are sourced automatically from the active environment — not passed by the caller.
 EventsOn("tool:output", (chunk: string) => appendToOutputPanel(chunk));
 EventsOn("tool:done",   (result)       => showExitCode(result.exitCode));
-await RunTool({
-  toolId: id,
-  paramValues:  { PARAM_NAME: "value" },
-  envVarValues: { BASE_URL: "https://example.com", API_KEY: "abc123" },
-});
+await RunTool({ toolId: id, paramValues: { PARAM_NAME: "value" } });
+
+// Export selected tools (returns false if user cancelled the save dialog)
+const didExport = await ExportTools(["id1", "id2"]);
+
+// Import from one or more files (returns empty summary if cancelled)
+const { imported, skipped } = await ImportTools();
 ```
 
 ---

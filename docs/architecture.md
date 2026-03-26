@@ -57,6 +57,8 @@ zeonta/
 │       │   │   └── ParamEditor.tsx
 │       │   ├── Environments/
 │       │   │   └── EnvironmentPanel.tsx
+│       │   ├── Exports/
+│       │   │   └── ExportPanel.tsx
 │       │   └── OutputPanel/
 │       │       └── OutputPanel.tsx
 │       ├── types/
@@ -158,6 +160,7 @@ type AppState = {
   runResult: RunResult | null                   // set on tool:done event
   environmentPanelOpen: boolean
   activeEnvironment: EnvironmentSummary | null
+  exportPanelOpen: boolean
 }
 ```
 

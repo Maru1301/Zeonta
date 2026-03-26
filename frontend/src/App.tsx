@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ThemeProvider, CssBaseline, Box } from '@mui/material'
+import { ThemeProvider, CssBaseline, Box, Snackbar, Alert } from '@mui/material'
 import { EventsOn } from '../wailsjs/runtime/runtime'
-import { ListTools, GetTool, RunTool, ListEnvironments } from '../wailsjs/go/main/App'
+import { ListTools, GetTool, RunTool, ListEnvironments, ExportTools, ImportTools } from '../wailsjs/go/main/App'
 import theme from './theme'
 import type { Tool, ToolSummary, RunResult, EnvironmentSummary } from './types/tool'
 import Sidebar from './components/Sidebar/Sidebar'
@@ -9,6 +9,7 @@ import ContentArea from './components/ContentArea/ContentArea'
 import EditPanel from './components/EditPanel/EditPanel'
 import OutputPanel from './components/OutputPanel/OutputPanel'
 import EnvironmentPanel from './components/Environments/EnvironmentPanel'
+import ExportPanel from './components/Exports/ExportPanel'
 
 export type EditPanelMode = 'create' | 'edit' | null
 
@@ -81,6 +82,38 @@ export default function App() {
     setEditPanelMode(null)
   }, [])
 
+  const [exportPanelOpen, setExportPanelOpen] = useState(false)
+
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false, message: '', severity: 'success',
+  })
+  const showSnackbar = useCallback((message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity })
+  }, [])
+
+  const handleExport = useCallback(async (ids: string[]): Promise<boolean> => {
+    try {
+      const exported = await ExportTools(ids)
+      if (exported) showSnackbar('Tools exported successfully', 'success')
+      return exported
+    } catch (e: any) {
+      showSnackbar(`Export failed: ${e}`, 'error')
+      return false
+    }
+  }, [showSnackbar])
+
+  const handleImport = useCallback(async () => {
+    try {
+      const result = await ImportTools()
+      if (result.imported === 0 && result.skipped.length === 0) return // cancelled
+      const skippedPart = result.skipped.length > 0 ? ` · Skipped: ${result.skipped.join(', ')}` : ''
+      showSnackbar(`Imported ${result.imported} tool${result.imported !== 1 ? 's' : ''}${skippedPart}`, 'success')
+      await refreshTools()
+    } catch (e: any) {
+      showSnackbar(`Import failed: ${e}`, 'error')
+    }
+  }, [refreshTools, showSnackbar])
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -92,21 +125,31 @@ export default function App() {
           onSelectTool={selectTool}
           onNewTool={() => { setSelectedTool(null); setEditPanelMode('create') }}
           onManageEnvironments={() => setEnvironmentPanelOpen(true)}
+          onExport={() => setExportPanelOpen(true)}
+          onImport={handleImport}
         />
 
         <Box className="flex flex-col flex-1 overflow-hidden">
           <Box className="flex-1 overflow-auto">
-            <ContentArea
-              tool={selectedTool}
-              onEdit={() => setEditPanelMode('edit')}
-              onRun={(paramValues) => {
-                handleRunStart()
-                if (selectedTool) {
-                  RunTool({ toolId: selectedTool.id, paramValues })
-                }
-              }}
-              onDeleted={handleToolDeleted}
-            />
+            {exportPanelOpen ? (
+              <ExportPanel
+                tools={tools}
+                onExport={handleExport}
+                onClose={() => setExportPanelOpen(false)}
+              />
+            ) : (
+              <ContentArea
+                tool={selectedTool}
+                onEdit={() => setEditPanelMode('edit')}
+                onRun={(paramValues) => {
+                  handleRunStart()
+                  if (selectedTool) {
+                    RunTool({ toolId: selectedTool.id, paramValues })
+                  }
+                }}
+                onDeleted={handleToolDeleted}
+              />
+            )}
           </Box>
           {outputPanelOpen && (
             <OutputPanel
@@ -134,6 +177,21 @@ export default function App() {
           />
         )}
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </ThemeProvider>
   )
 }

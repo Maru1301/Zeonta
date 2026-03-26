@@ -118,7 +118,44 @@ The user edits values directly and clicks "Run" — no separate panel is opened.
 > **Note:** Parameter values edited in the Tool Detail view are **not** saved back to the tool definition.
 > They are one-time overrides for this execution. To change the defaults, use the Edit flow (Flow 2).
 
-### Flow 5 — Delete a Tool
+### Flow 4 — Export Tools
+
+```
+[Sidebar: click "Export"]
+        ↓
+[Export Panel replaces Content Area]
+  All tools listed with checkboxes (all pre-selected)
+  "Select All" / "Deselect All" toggle
+  "Export (N)" button shows count of selected tools
+        ↓
+[User selects desired tools, clicks "Export (N)"]
+        ↓
+[Native save dialog opens]
+  If cancelled → Export Panel stays open, user can retry
+  If confirmed → JSON file written
+        ↓
+[Export Panel closes, snackbar confirms success]
+```
+
+### Flow 5 — Import Tools
+
+```
+[Sidebar: click "Import"]
+        ↓
+[Native multi-file picker opens — accepts .json, .ps1, .bat, .go]
+  If cancelled → nothing happens
+        ↓
+[Each selected file is parsed and tools are created]
+  .json → all tools inside the file
+  .ps1 / .bat → one shell tool, name from filename
+  .go → one Go tool, name from filename
+  Conflicts (name already exists) → skipped
+        ↓
+[Snackbar shows result: "Imported N tools · Skipped: X, Y"]
+[Sidebar tool list refreshes]
+```
+
+### Flow 6 — Delete a Tool
 
 ```
 [Content Area: click "Delete"]
@@ -136,14 +173,19 @@ The user edits values directly and clicks "Run" — no separate panel is opened.
 App
 ├── Sidebar
 │   ├── NewToolButton
+│   ├── ImportButton
+│   ├── ExportButton
 │   └── ToolList
 │       └── ToolListItem (one per tool)
-├── ContentArea
+├── ContentArea  [mutually exclusive with ExportPanel]
 │   ├── EmptyState (shown when no tool selected)
 │   └── ToolDetail
 │       ├── ToolHeader (name, type badge, Edit + Delete + Run buttons)
 │       ├── ScriptPreview (read-only code block)
 │       └── ParamInputs (editable TextField per param, pre-filled with defaults)
+├── ExportPanel  [replaces ContentArea when export flow is active]
+│   ├── ToolCheckboxList (one row per tool)
+│   └── SelectAll / Export(N) / Cancel buttons
 ├── EditPanel (conditionally rendered for create/edit only, slides in from right)
 │   ├── ToolNameField
 │   ├── ToolTypeSelector (shell / Go)
@@ -166,4 +208,5 @@ App
 | Creating new tool | Sidebar + Tool Detail (or Empty) + Edit Panel (blank) |
 | Editing tool | Sidebar + Tool Detail + Edit Panel (pre-filled) |
 | Running | Sidebar + Tool Detail (with param inputs) + Output Panel open |
+| Exporting | Sidebar + Export Panel (replaces Content Area) |
 | Confirm delete | Inline confirmation within Tool Detail |

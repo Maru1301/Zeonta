@@ -107,6 +107,23 @@ As a user, I can write just the body of a Go function as my tool — so that I d
 
 ---
 
+### F8 — Import / Export
+
+**User story:**
+As a user, I can export my tools to a file and import tools from a file — so that I can share tool definitions across machines or back them up.
+
+**Acceptance criteria:**
+- ✅ Clicking "Export" opens a selection view in the main panel listing all tools with checkboxes (all pre-selected)
+- ✅ User can select any subset of tools and click "Export (N)" to open a native save dialog
+- ✅ The exported file is a JSON envelope containing the selected tools' name, type, body, desc, and params (no IDs or timestamps)
+- ✅ If the user cancels the save dialog the panel stays open; it closes only after a file is actually written
+- ✅ Clicking "Import" opens a native multi-file picker supporting `.json`, `.ps1`, `.bat`, and `.go`
+- ✅ Imported `.ps1` / `.bat` files create a shell tool; `.go` files create a Go tool — name derived from filename, desc and params empty
+- ✅ Tools whose names already exist are skipped (not overwritten); the result message lists skipped names
+- ✅ A snackbar confirms success or reports failure for both operations
+
+---
+
 ## Non-Functional Requirements
 
 | Requirement | Target |
@@ -121,7 +138,6 @@ As a user, I can write just the body of a Go function as my tool — so that I d
 
 ## Out of Scope for v1
 
-- Importing/exporting tools
 - Categorizing or tagging tools
 - Execution history / logs
 - Scheduling tools to run automatically

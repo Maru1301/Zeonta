@@ -1,6 +1,8 @@
 import { Box, Button, Typography, Divider } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import LayersIcon from '@mui/icons-material/Layers'
+import FileUploadIcon from '@mui/icons-material/FileUpload'
+import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import type { ToolSummary, EnvironmentSummary } from '../../types/tool'
 import ToolList from './ToolList'
 
@@ -11,9 +13,15 @@ interface Props {
   onSelectTool: (id: string) => void
   onNewTool: () => void
   onManageEnvironments: () => void
+  onExport: () => void
+  onImport: () => void
 }
 
-export default function Sidebar({ tools, selectedToolId, activeEnvironment, onSelectTool, onNewTool, onManageEnvironments }: Props) {
+export default function Sidebar({
+  tools, selectedToolId, activeEnvironment,
+  onSelectTool, onNewTool, onManageEnvironments,
+  onExport, onImport,
+}: Props) {
   return (
     <Box
       sx={{
@@ -36,8 +44,8 @@ export default function Sidebar({ tools, selectedToolId, activeEnvironment, onSe
 
       <Divider />
 
-      {/* New Tool button */}
-      <Box sx={{ px: 1.5, py: 1 }}>
+      {/* New Tool + Import/Export */}
+      <Box sx={{ px: 1.5, py: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         <Button
           fullWidth
           size="small"
@@ -51,6 +59,24 @@ export default function Sidebar({ tools, selectedToolId, activeEnvironment, onSe
         >
           New Tool
         </Button>
+        <Box className="flex gap-1">
+          <Button
+            size="small"
+            startIcon={<FileUploadIcon fontSize="small" />}
+            onClick={onImport}
+            sx={{ flex: 1, justifyContent: 'flex-start', color: 'text.secondary', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+          >
+            Import
+          </Button>
+          <Button
+            size="small"
+            startIcon={<FileDownloadIcon fontSize="small" />}
+            onClick={onExport}
+            sx={{ flex: 1, justifyContent: 'flex-start', color: 'text.secondary', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+          >
+            Export
+          </Button>
+        </Box>
       </Box>
 
       <Divider />
