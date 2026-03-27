@@ -45,6 +45,16 @@ CREATE TABLE IF NOT EXISTS env_entries (
     sort_order     INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS run_history (
+    id        TEXT    PRIMARY KEY,
+    tool_id   TEXT    NOT NULL,
+    tool_name TEXT    NOT NULL,
+    ran_at    INTEGER NOT NULL,
+    exit_code INTEGER NOT NULL,
+    output    TEXT    NOT NULL DEFAULT '',
+    error     TEXT    NOT NULL DEFAULT ''
+);
+
 PRAGMA foreign_keys = ON;
 `
 

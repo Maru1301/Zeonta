@@ -117,6 +117,7 @@ func (a *App) DeleteTool(id string) error {
 
 // RunTool executes a tool, streaming output via Wails events.
 // Env vars are sourced from the currently active environment set.
+// Each run is recorded to history automatically.
 func (a *App) RunTool(input executor.RunInput) executor.RunResult {
 	tool, err := a.store.GetTool(input.ToolID)
 	if err != nil {
@@ -129,8 +130,36 @@ func (a *App) RunTool(input executor.RunInput) executor.RunResult {
 		runtime.EventsEmit(a.ctx, "tool:output", line)
 	})
 
+	_ = a.store.RecordRun(tool.ID, tool.Name, result.ExitCode, result.Output, result.Error)
+
 	runtime.EventsEmit(a.ctx, "tool:done", result)
 	return result
+}
+
+// --- History methods ---
+
+// ListHistory returns the latest 200 history summaries.
+// Pass toolID="" to list all tools; pass a specific ID to filter by tool.
+func (a *App) ListHistory(toolID string) []store.HistorySummary {
+	return a.store.ListHistory(toolID)
+}
+
+// GetHistoryEntry returns the full record for a single history entry.
+func (a *App) GetHistoryEntry(id string) (store.HistoryEntry, error) {
+	entry, err := a.store.GetHistoryEntry(id)
+	if err != nil {
+		return store.HistoryEntry{}, fmt.Errorf("could not load history entry: %w", err)
+	}
+	return entry, nil
+}
+
+// ClearHistory deletes history entries.
+// Pass toolID="" to clear all history; pass a specific ID to clear only that tool's history.
+func (a *App) ClearHistory(toolID string) error {
+	if err := a.store.ClearHistory(toolID); err != nil {
+		return fmt.Errorf("could not clear history: %w", err)
+	}
+	return nil
 }
 
 // --- Environment methods ---

@@ -60,7 +60,7 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 
 | Panel | Purpose |
 |---|---|
-| **Sidebar** | Lists all saved tools; button to create new tool |
+| **Sidebar** | Lists all saved tools; buttons for new tool, import/export, history, and environment |
 | **Content Area** | Displays selected tool's detail: name, type, script preview, inline param inputs, Run button |
 | **Edit Panel** | Slides in from right for create/edit only; overlays content area partially |
 | **Output Panel** | Slides up from bottom when tool is run; shows stdout/stderr with exit code |
@@ -165,6 +165,33 @@ The user edits values directly and clicks "Run" — no separate panel is opened.
 [On Confirm: tool removed from Sidebar, Content Area shows Empty State]
 ```
 
+### Flow 7 — View History
+
+```
+[Sidebar: click "History"]
+        ↓
+[History Panel slides in from right]
+  Optional filter: "All tools" or select a specific tool
+  List: exit code chip · tool name · timestamp (newest first)
+        ↓
+[Click a row]
+        ↓
+[Detail view: tool name, exit code, timestamp, full output block]
+  Back button → returns to list
+        ↓
+[While History Panel is open, completing a new run refreshes the list automatically]
+```
+
+### Flow 8 — Clear History
+
+```
+[History Panel: click "Clear"]
+        ↓
+[Confirmation dialog: describes scope (filtered tool or all tools)]
+  Cancel → nothing happens
+  Clear  → entries deleted, list refreshes
+```
+
 ---
 
 ## Component Map
@@ -175,8 +202,10 @@ App
 │   ├── NewToolButton
 │   ├── ImportButton
 │   ├── ExportButton
-│   └── ToolList
-│       └── ToolListItem (one per tool)
+│   ├── HistoryButton
+│   ├── ToolList
+│   │   └── ToolListItem (one per tool)
+│   └── EnvironmentIndicator (active env name or "No Environment")
 ├── ContentArea  [mutually exclusive with ExportPanel]
 │   ├── EmptyState (shown when no tool selected)
 │   └── ToolDetail
@@ -192,6 +221,11 @@ App
 │   ├── ScriptEditor (multiline code input)
 │   ├── ParamEditor (add/remove named params with defaults)
 │   └── SaveButton / CancelButton
+├── HistoryPanel (conditionally rendered, slides in from right)
+│   ├── ToolFilter (dropdown: all tools or specific tool)
+│   ├── ClearButton (opens confirmation dialog before clearing)
+│   ├── HistoryList (clickable rows: exit code chip · tool name · timestamp)
+│   └── HistoryDetail (full output block + back button; shown on row click)
 └── OutputPanel (conditionally rendered, slides up from bottom)
     ├── OutputHeader (tool name, exit code badge, Close button)
     └── OutputBody (monospace scrollable log output)
@@ -209,4 +243,6 @@ App
 | Editing tool | Sidebar + Tool Detail + Edit Panel (pre-filled) |
 | Running | Sidebar + Tool Detail (with param inputs) + Output Panel open |
 | Exporting | Sidebar + Export Panel (replaces Content Area) |
+| Viewing history | Sidebar + Content Area + History Panel (slides in from right) |
+| Clearing history | History Panel + confirmation dialog overlay |
 | Confirm delete | Inline confirmation within Tool Detail |

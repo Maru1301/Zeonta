@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { ThemeProvider, CssBaseline, Box, Snackbar, Alert } from '@mui/material'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import { ListTools, GetTool, RunTool, ListEnvironments, ExportTools, ImportTools } from '../wailsjs/go/main/App'
+import HistoryPanel from './components/History/HistoryPanel'
 import theme from './theme'
 import type { Tool, ToolSummary, RunResult, EnvironmentSummary } from './types/tool'
 import Sidebar from './components/Sidebar/Sidebar'
@@ -21,6 +22,7 @@ export default function App() {
   const [outputPanelOpen, setOutputPanelOpen] = useState(false)
   const [outputLines, setOutputLines] = useState<string[]>([])
   const [runResult, setRunResult] = useState<RunResult | null>(null)
+  const [runCount, setRunCount] = useState(0)
   const [environmentPanelOpen, setEnvironmentPanelOpen] = useState(false)
   const [activeEnvironment, setActiveEnvironment] = useState<EnvironmentSummary | null>(null)
 
@@ -61,6 +63,7 @@ export default function App() {
         })
         offDone = EventsOn('tool:done', (result: RunResult) => {
           setRunResult(result)
+          setRunCount(c => c + 1)
         })
       } catch {
         // Wails bridge not ready yet (dev hot-reload race) — retry shortly
@@ -108,6 +111,7 @@ export default function App() {
   }, [])
 
   const [exportPanelOpen, setExportPanelOpen] = useState(false)
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false)
 
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
@@ -152,6 +156,7 @@ export default function App() {
           onManageEnvironments={() => setEnvironmentPanelOpen(true)}
           onExport={() => setExportPanelOpen(true)}
           onImport={handleImport}
+          onHistory={() => setHistoryPanelOpen(true)}
         />
 
         <Box className="flex flex-col flex-1 overflow-hidden">
@@ -199,6 +204,14 @@ export default function App() {
           <EnvironmentPanel
             onClose={() => setEnvironmentPanelOpen(false)}
             onActiveChanged={refreshActiveEnvironment}
+          />
+        )}
+
+        {historyPanelOpen && (
+          <HistoryPanel
+            tools={tools}
+            runCount={runCount}
+            onClose={() => setHistoryPanelOpen(false)}
           />
         )}
       </Box>

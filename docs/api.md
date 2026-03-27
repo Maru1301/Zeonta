@@ -81,6 +81,26 @@ type EnvironmentSummary struct {
     IsActive bool   `json:"isActive"`
 }
 
+// HistorySummary is a lightweight history record used in the history list.
+type HistorySummary struct {
+    ID       string `json:"id"`
+    ToolID   string `json:"toolId"`
+    ToolName string `json:"toolName"` // snapshot at run time — preserved even if tool is renamed/deleted
+    RanAt    int64  `json:"ranAt"`    // Unix timestamp
+    ExitCode int    `json:"exitCode"`
+}
+
+// HistoryEntry is a full history record including output and error text.
+type HistoryEntry struct {
+    ID       string `json:"id"`
+    ToolID   string `json:"toolId"`
+    ToolName string `json:"toolName"`
+    RanAt    int64  `json:"ranAt"`
+    ExitCode int    `json:"exitCode"`
+    Output   string `json:"output"`
+    Error    string `json:"error"`
+}
+
 // RunInput carries the values the user provided at run time.
 type RunInput struct {
     ToolID      string            `json:"toolId"`
@@ -237,6 +257,31 @@ Executes a tool synchronously.
 - Captures stdout and stderr combined into `RunResult.Output`.
 - Returns `RunResult` with the exit code on completion.
 - Returns a Go-level error only if execution could not start (e.g. tool not found, bad script path). A non-zero exit code from the script is **not** a Go error — it is reflected in `RunResult.ExitCode`.
+- Automatically records the run to history after execution completes (tool name snapshot, exit code, full output).
+
+---
+
+### History
+
+#### `ListHistory(toolID string) []HistorySummary`
+Returns the latest 200 history entries ordered by run time (newest first).
+
+- Pass `toolID=""` to list across all tools; pass a specific tool ID to filter.
+- Never returns null — returns an empty slice if no entries exist.
+
+---
+
+#### `GetHistoryEntry(id string) (HistoryEntry, error)`
+Returns the full record for a single history entry including output and error text.
+
+- Returns an error if the ID does not exist.
+
+---
+
+#### `ClearHistory(toolID string) error`
+Permanently deletes history entries.
+
+- Pass `toolID=""` to clear all history; pass a specific tool ID to clear only that tool's entries.
 
 ---
 
@@ -259,6 +304,7 @@ Emitted by the backend during execution. The frontend listens with `EventsOn`.
 import {
   ListTools, GetTool, CreateTool, UpdateTool, DeleteTool, RunTool,
   ExportTools, ImportTools,
+  ListHistory, GetHistoryEntry, ClearHistory,
 } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime";
 
@@ -288,6 +334,15 @@ const didExport = await ExportTools(["id1", "id2"]);
 
 // Import from one or more files (returns empty summary if cancelled)
 const { imported, skipped } = await ImportTools();
+
+// List all history (pass a toolId string to filter by tool)
+const summaries = await ListHistory("");
+
+// Get full output for a single history entry
+const entry = await GetHistoryEntry(id);
+
+// Clear history for one tool (pass "" to clear all)
+await ClearHistory(toolId);
 ```
 
 ---

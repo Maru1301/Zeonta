@@ -38,9 +38,12 @@ zeonta/
 │   ├── store/
 │   │   ├── store.go            # Open DB, run schema migration, expose Store struct
 │   │   ├── tools.go            # CRUD: ListTools, GetTool, CreateTool, UpdateTool, DeleteTool
-│   │   └── environments.go     # CRUD + SetActiveEnvironment, GetActiveEnvVars
+│   │   ├── environments.go     # CRUD + SetActiveEnvironment, GetActiveEnvVars
+│   │   └── history.go          # RecordRun, ListHistory, GetHistoryEntry, ClearHistory
 │   └── executor/
-│       └── executor.go      # Variable resolution, subprocess execution, output streaming
+│       ├── executor.go         # Variable resolution, subprocess execution, output streaming
+│       ├── proc_windows.go     # Windows: CREATE_NO_WINDOW flag to suppress console popup
+│       └── proc_other.go       # Non-Windows: no-op stub
 ├── frontend/
 │   └── src/
 │       ├── components/
@@ -59,6 +62,8 @@ zeonta/
 │       │   │   └── EnvironmentPanel.tsx
 │       │   ├── Exports/
 │       │   │   └── ExportPanel.tsx
+│       │   ├── History/
+│       │   │   └── HistoryPanel.tsx
 │       │   └── OutputPanel/
 │       │       └── OutputPanel.tsx
 │       ├── types/
@@ -137,9 +142,19 @@ CREATE TABLE IF NOT EXISTS env_entries (
     value          TEXT    NOT NULL DEFAULT '',
     sort_order     INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS run_history (
+    id        TEXT    PRIMARY KEY,
+    tool_id   TEXT    NOT NULL,
+    tool_name TEXT    NOT NULL,  -- snapshot; preserved if tool is renamed or deleted
+    ran_at    INTEGER NOT NULL,  -- Unix timestamp
+    exit_code INTEGER NOT NULL,
+    output    TEXT    NOT NULL DEFAULT '',
+    error     TEXT    NOT NULL DEFAULT ''
+);
 ```
 
-`ON DELETE CASCADE` ensures params are removed when a tool is deleted, and env entries are removed when their environment is deleted.
+`ON DELETE CASCADE` ensures params are removed when a tool is deleted, and env entries are removed when their environment is deleted. `run_history` has **no** foreign key on `tool_id` so history is preserved after a tool is deleted.
 
 ---
 
@@ -158,9 +173,11 @@ type AppState = {
   outputPanelOpen: boolean
   outputLines: string[]                         // streamed via tool:output events
   runResult: RunResult | null                   // set on tool:done event
+  runCount: number                              // increments on each tool:done; triggers history refresh
   environmentPanelOpen: boolean
   activeEnvironment: EnvironmentSummary | null
   exportPanelOpen: boolean
+  historyPanelOpen: boolean
 }
 ```
 
@@ -197,8 +214,11 @@ executor — write resolved script to temp file, start subprocess
       ▼
 executor — subprocess exits → emit tool:done event with RunResult
       │
+      ├── app.go records run to run_history (tool name snapshot, exit code, output)
+      │
       ▼
 Frontend: OutputPanel displays streamed output + exit code badge
+          runCount increments → HistoryPanel reloads if open
 ```
 
 **Note:** Param values entered in the Tool Detail view are one-time overrides and are never saved back to the tool definition. To change defaults, the user uses the Edit flow.

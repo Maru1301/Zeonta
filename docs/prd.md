@@ -124,6 +124,22 @@ As a user, I can export my tools to a file and import tools from a file — so t
 
 ---
 
+### F9 — Execution History / Logs
+
+**User story:**
+As a user, I can review the history of past tool runs — so that I can check what output a tool produced and whether it succeeded or failed.
+
+**Acceptance criteria:**
+- ✅ Every tool run is automatically saved to history with: tool name snapshot, timestamp, exit code, and full output
+- ✅ History is accessible from a "History" button in the sidebar
+- ✅ History panel shows a filterable list (all tools or a specific tool), newest runs first
+- ✅ Clicking a history entry shows the full output in a detail view
+- ✅ History entries are preserved even if the tool is later renamed or deleted (name is snapshotted at run time)
+- ✅ User can clear history for a specific tool or all tools; a confirmation dialog is shown before clearing
+- ✅ If the history panel is open when a new run completes, the list refreshes automatically
+
+---
+
 ## Non-Functional Requirements
 
 | Requirement | Target |
@@ -139,6 +155,5 @@ As a user, I can export my tools to a file and import tools from a file — so t
 ## Out of Scope for v1
 
 - Categorizing or tagging tools
-- Execution history / logs
 - Scheduling tools to run automatically
 - Any form of cloud sync or remote execution

@@ -11,3 +11,5 @@ export type ToolType = 'shell' | 'go'
 export type Environment = store.Environment
 export type EnvironmentSummary = store.EnvironmentSummary
 export type EnvEntry = store.EnvEntry
+export type HistorySummary = store.HistorySummary
+export type HistoryEntry = store.HistoryEntry
