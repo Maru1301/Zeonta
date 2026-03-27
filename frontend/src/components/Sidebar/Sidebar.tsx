@@ -1,4 +1,5 @@
 import { Box, Button, Typography, Divider } from '@mui/material'
+import logo from '../../assets/images/zeonta-256.png'
 import AddIcon from '@mui/icons-material/Add'
 import LayersIcon from '@mui/icons-material/Layers'
 import FileUploadIcon from '@mui/icons-material/FileUpload'
@@ -36,8 +37,9 @@ export default function Sidebar({
       }}
     >
       {/* Header */}
-      <Box sx={{ px: 2.5, py: 2 }}>
-        <Typography variant="subtitle2" sx={{ color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+      <Box className="flex items-center gap-2" sx={{ px: 2.5, py: 2 }}>
+        <Box component="img" src={logo} alt="Zeonta" sx={{ height: 32, display: 'block' }} />
+        <Typography variant="h6" sx={{ color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           Zeonta
         </Typography>
       </Box>
