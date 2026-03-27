@@ -53,7 +53,7 @@ export default function EditPanel({ mode, tool, onSaved, onClose }: Props) {
   return (
     <Box
       sx={{
-        width: 420,
+        width: 500,
         flexShrink: 0,
         bgcolor: 'background.paper',
         borderLeft: '1px solid',
@@ -64,37 +64,35 @@ export default function EditPanel({ mode, tool, onSaved, onClose }: Props) {
       }}
     >
       {/* Header */}
-      <Box className="flex items-center justify-between" sx={{ px: 2, py: 1.5 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{title}</Typography>
-        <IconButton size="small" onClick={onClose} sx={{ color: 'text.secondary' }}>
-          <CloseIcon fontSize="small" />
+      <Box className="flex items-center justify-between" sx={{ px: 3, py: 2 }}>
+        <Typography variant="h6">{title}</Typography>
+        <IconButton onClick={onClose} sx={{ color: 'text.secondary' }}>
+          <CloseIcon />
         </IconButton>
       </Box>
       <Divider />
 
       {/* Body */}
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         {error && (
-          <Typography variant="caption" sx={{ color: '#f87171' }}>{error}</Typography>
+          <Typography variant="body2" sx={{ color: '#f87171' }}>{error}</Typography>
         )}
 
         <TextField
           label="Name"
-          size="small"
           fullWidth
           value={name}
           onChange={e => setName(e.target.value)}
         />
         <TextField
           label="Description"
-          size="small"
           fullWidth
           value={desc}
           onChange={e => setDesc(e.target.value)}
           inputProps={{ maxLength: 300 }}
           helperText={`${desc.length}/300`}
         />
-        <FormControl size="small" fullWidth>
+        <FormControl fullWidth>
           <InputLabel>Type</InputLabel>
           <Select value={type} label="Type" onChange={e => setType(e.target.value as ToolType)}>
             <MenuItem value="shell">Shell (PowerShell)</MenuItem>
@@ -104,11 +102,11 @@ export default function EditPanel({ mode, tool, onSaved, onClose }: Props) {
         <TextField
           label="Script / Function body"
           multiline
-          minRows={8}
+          minRows={10}
           fullWidth
           value={body}
           onChange={e => setBody(e.target.value)}
-          inputProps={{ style: { fontFamily: '"JetBrains Mono", "Fira Code", monospace', fontSize: 13 } }}
+          inputProps={{ style: { fontFamily: '"JetBrains Mono", "Fira Code", monospace', fontSize: 14, lineHeight: 1.65 } }}
         />
         <ParamEditor params={params} onChange={setParams} />
       </Box>
@@ -116,9 +114,9 @@ export default function EditPanel({ mode, tool, onSaved, onClose }: Props) {
       <Divider />
 
       {/* Footer */}
-      <Box className="flex justify-end gap-2" sx={{ px: 2, py: 1.5 }}>
-        <Button size="small" onClick={onClose} sx={{ color: 'text.secondary' }}>Cancel</Button>
-        <Button size="small" variant="contained" onClick={handleSave}>Save</Button>
+      <Box className="flex justify-end gap-2" sx={{ px: 3, py: 2 }}>
+        <Button onClick={onClose} sx={{ color: 'text.secondary' }}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave}>Save</Button>
       </Box>
     </Box>
   )

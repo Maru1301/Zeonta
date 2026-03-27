@@ -34,11 +34,11 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 720 }}>
+    <Box sx={{ p: 4, maxWidth: 860 }}>
       {/* Header */}
-      <Box className="flex items-center justify-between gap-2" sx={{ mb: 2 }}>
+      <Box className="flex items-center justify-between gap-2" sx={{ mb: 2.5 }}>
         <Box className="flex items-center gap-2">
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>{tool.name}</Typography>
+          <Typography variant="h6">{tool.name}</Typography>
           <Chip
             label={tool.type}
             size="small"
@@ -49,25 +49,25 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
           />
         </Box>
 
-        <Box className="flex gap-1">
-          <Button size="small" variant="contained" startIcon={<PlayArrowIcon />} onClick={() => onRun(paramValues)}>
+        <Box className="flex gap-1 items-center">
+          <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={() => onRun(paramValues)}>
             Run
           </Button>
-          <IconButton size="small" onClick={onEdit} sx={{ color: 'text.secondary' }}>
-            <EditIcon fontSize="small" />
+          <IconButton onClick={onEdit} sx={{ color: 'text.secondary' }}>
+            <EditIcon />
           </IconButton>
           {!confirming ? (
-            <IconButton size="small" onClick={() => setConfirming(true)} sx={{ color: 'text.secondary' }}>
-              <DeleteIcon fontSize="small" />
+            <IconButton onClick={() => setConfirming(true)} sx={{ color: 'text.secondary' }}>
+              <DeleteIcon />
             </IconButton>
           ) : (
             <Box className="flex items-center gap-1" sx={{ ml: 1 }}>
-              <Typography variant="caption" sx={{ color: '#f87171' }}>Delete?</Typography>
+              <Typography variant="body2" sx={{ color: '#f87171' }}>Delete?</Typography>
               <IconButton size="small" onClick={handleDelete} sx={{ color: '#4ade80' }}>
-                <CheckIcon fontSize="small" />
+                <CheckIcon />
               </IconButton>
               <IconButton size="small" onClick={() => setConfirming(false)} sx={{ color: 'text.secondary' }}>
-                <CloseIcon fontSize="small" />
+                <CloseIcon />
               </IconButton>
             </Box>
           )}
@@ -76,31 +76,32 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
 
       {/* Description */}
       {tool.desc && (
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>{tool.desc}</Typography>
+        <Typography variant="body1" sx={{ color: 'text.secondary', mb: 2.5 }}>{tool.desc}</Typography>
       )}
 
       {error && (
-        <Typography variant="caption" sx={{ color: '#f87171', display: 'block', mb: 1 }}>{error}</Typography>
+        <Typography variant="body2" sx={{ color: '#f87171', display: 'block', mb: 1.5 }}>{error}</Typography>
       )}
 
-      <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 3 }} />
 
       {/* Script body */}
-      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>Script</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary', display: 'block', mb: 1.5, fontWeight: 500 }}>Script</Typography>
       <Box
         component="pre"
         sx={{
           bgcolor: '#1a1a1a',
           border: '1px solid #3a3a3a',
           borderRadius: 1,
-          p: 2,
+          p: 2.5,
           overflowX: 'auto',
           fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-          fontSize: 13,
+          fontSize: 14,
           color: '#dcdcdc',
-          mb: 3,
+          mb: 4,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-all',
+          lineHeight: 1.65,
         }}
       >
         {tool.body}
@@ -109,7 +110,7 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
       {/* Params */}
       {(tool.params ?? []).length > 0 && (
         <>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', display: 'block', mb: 1.5, fontWeight: 500 }}>
             Parameters
           </Typography>
           <Box sx={{ mb: 3 }}>
@@ -117,17 +118,15 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
               <TextField
                 key={p.id || p.name}
                 label={`[[${p.name}]]`}
-                size="small"
                 fullWidth
                 value={paramValues[p.name] ?? p.default}
                 onChange={e => setParamValues(prev => ({ ...prev, [p.name]: e.target.value }))}
-                sx={{ mb: 1 }}
+                sx={{ mb: 1.5 }}
               />
             ))}
           </Box>
         </>
       )}
-
     </Box>
   )
 }

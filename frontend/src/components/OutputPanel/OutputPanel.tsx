@@ -23,7 +23,7 @@ export default function OutputPanel({ tool, lines, result, onClose }: Props) {
   return (
     <Box
       sx={{
-        height: '35%',
+        height: '40%',
         borderTop: '1px solid',
         borderColor: 'divider',
         bgcolor: '#111',
@@ -32,21 +32,19 @@ export default function OutputPanel({ tool, lines, result, onClose }: Props) {
       }}
     >
       {/* Header */}
-      <Box className="flex items-center justify-between" sx={{ px: 2, py: 1, flexShrink: 0 }}>
+      <Box className="flex items-center justify-between" sx={{ px: 2.5, py: 1.5, flexShrink: 0 }}>
         <Box className="flex items-center gap-2">
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
             {tool?.name ?? 'Output'}
           </Typography>
           {running && (
-            <Chip label="running" size="small" sx={{ height: 16, fontSize: 10, bgcolor: 'rgba(251,191,36,0.15)', color: '#fbbf24' }} />
+            <Chip label="running" size="small" sx={{ bgcolor: 'rgba(251,191,36,0.15)', color: '#fbbf24' }} />
           )}
           {!running && exitCode !== null && (
             <Chip
               label={exitCode === 0 ? 'exit 0' : `exit ${exitCode}`}
               size="small"
               sx={{
-                height: 16,
-                fontSize: 10,
                 bgcolor: exitCode === 0 ? 'rgba(34,197,94,0.15)' : 'rgba(248,113,113,0.15)',
                 color: exitCode === 0 ? '#4ade80' : '#f87171',
               }}
@@ -68,7 +66,7 @@ export default function OutputPanel({ tool, lines, result, onClose }: Props) {
           px: 2,
           py: 1,
           fontFamily: '"JetBrains Mono", "Fira Code", monospace',
-          fontSize: 12,
+          fontSize: 14,
           color: '#dcdcdc',
           lineHeight: 1.6,
         }}
