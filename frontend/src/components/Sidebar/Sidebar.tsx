@@ -53,6 +53,16 @@ export default function Sidebar({
         <Typography variant="h6" sx={{ color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           Zeonta
         </Typography>
+        <Box sx={{ flex: 1 }} />
+        <Tooltip title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} placement="right">
+          <IconButton
+            size="small"
+            onClick={onToggleTheme}
+            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+          >
+            {themeMode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <Divider />
@@ -153,18 +163,6 @@ export default function Sidebar({
         >
           {activeEnvironment ? `ENV: ${activeEnvironment.name}` : 'No Environment'}
         </Button>
-      </Box>
-      <Divider />
-      <Box sx={{ px: 1.5, py: 1, display: 'flex', justifyContent: 'flex-end' }}>
-        <Tooltip title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} placement="right">
-          <IconButton
-            size="small"
-            onClick={onToggleTheme}
-            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
-          >
-            {themeMode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
-          </IconButton>
-        </Tooltip>
       </Box>
     </Box>
   )
