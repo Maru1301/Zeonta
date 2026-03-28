@@ -74,6 +74,15 @@ wails generate module
 3. Import and call the binding from the relevant React component
 4. Register the tool in the UI tool registry
 
+### Versioning Policy
+The app version lives in `wails.json` (`"version"` field). Follow semantic versioning:
+- **Patch** (`0.x.Y`): bug fixes only, no new features
+- **Minor** (`0.X.0`): new feature or feature group released
+- **Major** (`X.0.0`): breaking change or major milestone
+
+**Every time a new feature is shipped, bump the minor version before committing.**
+Update `wails.json` as part of the same commit as the feature work.
+
 ---
 
 ## Coding Conventions
