@@ -5,6 +5,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import CheckIcon from '@mui/icons-material/Check'
 import CloseIcon from '@mui/icons-material/Close'
+import HistoryEduIcon from '@mui/icons-material/HistoryEdu'
 import { DeleteTool } from '../../../wailsjs/go/main/App'
 import type { Tool } from '../../types/tool'
 
@@ -13,9 +14,10 @@ interface Props {
   onEdit: () => void
   onRun: (paramValues: Record<string, string>) => void
   onDeleted: () => void
+  onVersions: () => void
 }
 
-export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
+export default function ToolDetail({ tool, onEdit, onRun, onDeleted, onVersions }: Props) {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   const [paramValues, setParamValues] = useState<Record<string, string>>(() => {
@@ -53,6 +55,9 @@ export default function ToolDetail({ tool, onEdit, onRun, onDeleted }: Props) {
           <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={() => onRun(paramValues)}>
             Run
           </Button>
+          <IconButton onClick={onVersions} title="Version history" sx={{ color: 'text.secondary' }}>
+            <HistoryEduIcon />
+          </IconButton>
           <IconButton onClick={onEdit} sx={{ color: 'text.secondary' }}>
             <EditIcon />
           </IconButton>

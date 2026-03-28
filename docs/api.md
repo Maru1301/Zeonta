@@ -83,22 +83,54 @@ type EnvironmentSummary struct {
 
 // HistorySummary is a lightweight history record used in the history list.
 type HistorySummary struct {
-    ID       string `json:"id"`
-    ToolID   string `json:"toolId"`
-    ToolName string `json:"toolName"` // snapshot at run time — preserved even if tool is renamed/deleted
-    RanAt    int64  `json:"ranAt"`    // Unix timestamp
-    ExitCode int    `json:"exitCode"`
+    ID        string `json:"id"`
+    ToolID    string `json:"toolId"`
+    ToolName  string `json:"toolName"`  // snapshot at run time — preserved even if tool is renamed/deleted
+    RanAt     int64  `json:"ranAt"`     // Unix timestamp
+    ExitCode  int    `json:"exitCode"`
+    VersionID string `json:"versionId"` // empty for runs recorded before versioning was added
 }
 
 // HistoryEntry is a full history record including output and error text.
 type HistoryEntry struct {
-    ID       string `json:"id"`
-    ToolID   string `json:"toolId"`
-    ToolName string `json:"toolName"`
-    RanAt    int64  `json:"ranAt"`
-    ExitCode int    `json:"exitCode"`
-    Output   string `json:"output"`
-    Error    string `json:"error"`
+    ID        string `json:"id"`
+    ToolID    string `json:"toolId"`
+    ToolName  string `json:"toolName"`
+    RanAt     int64  `json:"ranAt"`
+    ExitCode  int    `json:"exitCode"`
+    Output    string `json:"output"`
+    Error     string `json:"error"`
+    VersionID string `json:"versionId"` // empty for runs recorded before versioning was added
+}
+
+// ToolVersionSummary is a lightweight version record used in the version list.
+type ToolVersionSummary struct {
+    ID      string `json:"id"`
+    ToolID  string `json:"toolId"`
+    Version int    `json:"version"` // auto-incremented per tool
+    Name    string `json:"name"`
+    SavedAt int64  `json:"savedAt"` // Unix timestamp
+}
+
+// ToolVersion is a full snapshot of a tool at a point in time.
+type ToolVersion struct {
+    ID      string   `json:"id"`
+    ToolID  string   `json:"toolId"`
+    Version int      `json:"version"`
+    Name    string   `json:"name"`
+    Type    ToolType `json:"type"`
+    Body    string   `json:"body"`
+    Desc    string   `json:"desc"`
+    Params  []Param  `json:"params"`
+    SavedAt int64    `json:"savedAt"`
+}
+
+// DeletedToolSummary identifies a deleted tool via its orphaned version snapshots.
+type DeletedToolSummary struct {
+    ToolID       string `json:"toolId"`
+    Name         string `json:"name"`
+    VersionCount int    `json:"versionCount"`
+    LastSavedAt  int64  `json:"lastSavedAt"` // Unix timestamp of most recent snapshot
 }
 
 // RunInput carries the values the user provided at run time.
@@ -285,6 +317,49 @@ Permanently deletes history entries.
 
 ---
 
+### Versioning
+
+#### `ListToolVersions(toolID string) []ToolVersionSummary`
+Returns all version summaries for a tool, newest first. Works for both live and deleted tools.
+
+---
+
+#### `GetToolVersion(id string) (ToolVersion, error)`
+Returns the full snapshot for a single version record.
+
+- Returns an error if the version ID does not exist.
+
+---
+
+#### `RestoreToolVersion(versionID string) (Tool, error)`
+Updates the live tool's content to match the given version snapshot. Does NOT record a new version. Returns the updated tool.
+
+- Returns an error if the version ID does not exist or the tool has been deleted.
+
+---
+
+#### `RunToolVersion(versionID string, paramValues map[string]string) RunResult`
+Executes an old version's script directly without modifying the live tool. Uses the current active environment. Records the run to history with the version's ID.
+
+---
+
+### Trash
+
+#### `ListDeletedTools() []DeletedToolSummary`
+Returns summaries of tools that have version snapshots but no matching row in the tools table (i.e. have been deleted).
+
+---
+
+#### `RestoreDeletedTool(versionID string) (Tool, error)`
+Recreates a deleted tool from the specified version snapshot, reusing the original tool ID so all prior version records re-attach. Returns an error if the tool name is already taken by a live tool.
+
+---
+
+#### `ClearTrashByIDs(toolIDs []string) error`
+Permanently deletes all version snapshots and run history for the specified deleted tool IDs. Only affects tools that are not in the live tools table. No-op if `toolIDs` is empty.
+
+---
+
 ## Wails Events
 
 Emitted by the backend during execution. The frontend listens with `EventsOn`.
@@ -305,6 +380,8 @@ import {
   ListTools, GetTool, CreateTool, UpdateTool, DeleteTool, RunTool,
   ExportTools, ImportTools,
   ListHistory, GetHistoryEntry, ClearHistory,
+  ListToolVersions, GetToolVersion, RestoreToolVersion, RunToolVersion,
+  ListDeletedTools, RestoreDeletedTool, ClearTrashByIDs,
 } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime";
 
@@ -320,7 +397,7 @@ const saved = await CreateTool({ name, type, body, desc, params });
 // Update an existing tool
 const updated = await UpdateTool({ id, name, type, body, desc, params });
 
-// Delete a tool
+// Delete a tool (moves to trash; versions and history are preserved)
 await DeleteTool(id);
 
 // Run a tool and stream output
@@ -336,13 +413,34 @@ const didExport = await ExportTools(["id1", "id2"]);
 const { imported, skipped } = await ImportTools();
 
 // List all history (pass a toolId string to filter by tool)
-const summaries = await ListHistory("");
+const entries = await ListHistory("");
 
 // Get full output for a single history entry
 const entry = await GetHistoryEntry(id);
 
 // Clear history for one tool (pass "" to clear all)
 await ClearHistory(toolId);
+
+// List all version summaries for a tool (newest first)
+const versions = await ListToolVersions(toolId);
+
+// Get full snapshot for a single version
+const version = await GetToolVersion(versionId);
+
+// Restore a live tool to a previous version (does not record a new version)
+const restored = await RestoreToolVersion(versionId);
+
+// Run an old version directly without modifying the live tool
+const result = await RunToolVersion(versionId, { PARAM_NAME: "value" });
+
+// List deleted tools (tools with orphaned version snapshots)
+const deleted = await ListDeletedTools();
+
+// Restore a deleted tool from a specific version snapshot
+const rehydrated = await RestoreDeletedTool(versionId);
+
+// Permanently delete specific tools from trash (versions + run history)
+await ClearTrashByIDs(["toolId1", "toolId2"]);
 ```
 
 ---

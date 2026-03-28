@@ -8,10 +8,10 @@ func TestRecordAndListHistory(t *testing.T) {
 	s := openTestStore(t)
 
 	// Record two runs for different tools
-	if err := s.RecordRun("tool-1", "Alpha", 0, "output A", ""); err != nil {
+	if err := s.RecordRun("tool-1", "Alpha", "", 0, "output A", ""); err != nil {
 		t.Fatalf("RecordRun: %v", err)
 	}
-	if err := s.RecordRun("tool-2", "Beta", 1, "output B", "some error"); err != nil {
+	if err := s.RecordRun("tool-2", "Beta", "", 1, "output B", "some error"); err != nil {
 		t.Fatalf("RecordRun: %v", err)
 	}
 
@@ -37,7 +37,7 @@ func TestRecordAndListHistory(t *testing.T) {
 func TestGetHistoryEntry(t *testing.T) {
 	s := openTestStore(t)
 
-	if err := s.RecordRun("tool-1", "Alpha", 0, "hello output", ""); err != nil {
+	if err := s.RecordRun("tool-1", "Alpha", "", 0, "hello output", ""); err != nil {
 		t.Fatalf("RecordRun: %v", err)
 	}
 
@@ -69,9 +69,9 @@ func TestGetHistoryEntry_NotFound(t *testing.T) {
 func TestClearHistory_ByTool(t *testing.T) {
 	s := openTestStore(t)
 
-	_ = s.RecordRun("tool-1", "Alpha", 0, "", "")
-	_ = s.RecordRun("tool-1", "Alpha", 0, "", "")
-	_ = s.RecordRun("tool-2", "Beta", 0, "", "")
+	_ = s.RecordRun("tool-1", "Alpha", "", 0, "", "")
+	_ = s.RecordRun("tool-1", "Alpha", "", 0, "", "")
+	_ = s.RecordRun("tool-2", "Beta", "", 0, "", "")
 
 	if err := s.ClearHistory("tool-1"); err != nil {
 		t.Fatalf("ClearHistory: %v", err)
@@ -89,8 +89,8 @@ func TestClearHistory_ByTool(t *testing.T) {
 func TestClearHistory_All(t *testing.T) {
 	s := openTestStore(t)
 
-	_ = s.RecordRun("tool-1", "Alpha", 0, "", "")
-	_ = s.RecordRun("tool-2", "Beta", 1, "", "err")
+	_ = s.RecordRun("tool-1", "Alpha", "", 0, "", "")
+	_ = s.RecordRun("tool-2", "Beta", "", 1, "", "err")
 
 	if err := s.ClearHistory(""); err != nil {
 		t.Fatalf("ClearHistory all: %v", err)
@@ -107,7 +107,7 @@ func TestListHistory_ToolNameSnapshot(t *testing.T) {
 
 	// Record with a tool name, then verify the snapshot is preserved
 	// (even if the tool is later renamed/deleted, history keeps the original name)
-	if err := s.RecordRun("tool-1", "OldName", 0, "", ""); err != nil {
+	if err := s.RecordRun("tool-1", "OldName", "", 0, "", ""); err != nil {
 		t.Fatalf("RecordRun: %v", err)
 	}
 

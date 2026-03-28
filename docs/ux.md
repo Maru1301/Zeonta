@@ -43,7 +43,7 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 |   > Tool C        |                                              |
 |   ...             +----------------------------------------------+
 |                   |                                              |
-|                   |   OUTPUT PANEL                               |
+|   [ Trash (N) ]   |   OUTPUT PANEL                               |
 |                   |   (hidden by default, slides up on run)      |
 |                   |   (resizable, ~35% height when open)         |
 +-------------------+----------------------------------------------+
@@ -60,10 +60,12 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 
 | Panel | Purpose |
 |---|---|
-| **Sidebar** | Lists all saved tools; buttons for new tool, import/export, history, and environment |
+| **Sidebar** | Lists all saved tools; buttons for new tool, import/export, history, environment, and trash |
 | **Content Area** | Displays selected tool's detail: name, type, script preview, inline param inputs, Run button |
 | **Edit Panel** | Slides in from right for create/edit only; overlays content area partially |
 | **Output Panel** | Slides up from bottom when tool is run; shows stdout/stderr with exit code |
+| **Versions Panel** | Slides in from right; shows all saved snapshots of a tool; supports running or restoring any version |
+| **Trash Panel** | Slides in from right; shows deleted tools with multi-select restore and permanent-delete actions |
 
 ---
 
@@ -192,6 +194,67 @@ The user edits values directly and clicks "Run" — no separate panel is opened.
   Clear  → entries deleted, list refreshes
 ```
 
+### Flow 9 — View & Restore a Tool Version
+
+```
+[Content Area: click clock icon ("Versions") on a selected tool]
+        ↓
+[Version Panel slides in from right — list of snapshots, newest first]
+  Each row: version number · save date
+  Version matching live tool content is tagged "current"
+        ↓
+[Click a version row]
+        ↓
+[Detail view: save date, type chip, script preview]
+  "Run this version" → executes old snapshot without modifying the live tool;
+                       run is recorded to history with the version's ID
+  "Restore to current" (non-current only) → live tool is updated to match snapshot;
+                                            no new version recorded; panel returns to list
+        ↓
+[When a new save happens, Version Panel reloads automatically]
+[When a different tool is selected, Version Panel closes]
+```
+
+### Flow 10 — Restore a Deleted Tool (Trash)
+
+```
+[Sidebar: click "Trash" button (shows count badge when deleted tools exist)]
+        ↓
+[Trash Panel slides in from right]
+  Search bar + select-all checkbox
+  Rows: checkbox · tool name · version count · last saved date
+        ↓
+Option A — Bulk restore / delete:
+  [Check one or more rows]
+  Header shows: "N of M selected" + "Restore (N)" and "Delete (N)" buttons
+  "Restore (N)" → confirmation dialog → restores latest version of each tool;
+                  Trash Panel stays open and reloads
+  "Delete (N)"  → confirmation dialog → permanently deletes versions + run history;
+                  Trash Panel stays open and reloads
+
+Option B — Detail view:
+  [Click a row (not checkbox)]
+  Detail view: type chip, version preview, all versions list, script preview
+  "Restore this version" button → confirmation dialog → restores that specific version;
+                                  Trash Panel stays open and returns to list
+        ↓
+[Trash Panel auto-refreshes if a tool is deleted while the panel is open]
+```
+
+### Flow 11 — View Version from History
+
+```
+[History Panel: click a history entry]
+        ↓
+[Detail view: tool name, exit code, timestamp, full output]
+  If the run has a versionId (recorded after versioning was added):
+    "View version" button is shown
+        ↓
+[Click "View version"]
+        ↓
+[Version Panel opens pre-selected to the exact version used in that run]
+```
+
 ---
 
 ## Component Map
@@ -203,13 +266,14 @@ App
 │   ├── ImportButton
 │   ├── ExportButton
 │   ├── HistoryButton
+│   ├── TrashButton (with count badge; badge hidden when trash is empty)
 │   ├── ToolList
 │   │   └── ToolListItem (one per tool)
 │   └── EnvironmentIndicator (active env name or "No Environment")
 ├── ContentArea  [mutually exclusive with ExportPanel]
 │   ├── EmptyState (shown when no tool selected)
 │   └── ToolDetail
-│       ├── ToolHeader (name, type badge, Edit + Delete + Run buttons)
+│       ├── ToolHeader (name, type badge, Edit + Delete + Versions + Run buttons)
 │       ├── ScriptPreview (read-only code block)
 │       └── ParamInputs (editable TextField per param, pre-filled with defaults)
 ├── ExportPanel  [replaces ContentArea when export flow is active]
@@ -225,7 +289,16 @@ App
 │   ├── ToolFilter (dropdown: all tools or specific tool)
 │   ├── ClearButton (opens confirmation dialog before clearing)
 │   ├── HistoryList (clickable rows: exit code chip · tool name · timestamp)
-│   └── HistoryDetail (full output block + back button; shown on row click)
+│   └── HistoryDetail (full output block + "View version" button + back button)
+├── VersionPanel (conditionally rendered, slides in from right; tied to a specific tool)
+│   ├── VersionList (clickable rows: version number · save date · "current" chip)
+│   └── VersionDetail (script preview, type chip, "Run this version" + "Restore to current" buttons)
+├── TrashPanel (conditionally rendered, slides in from right)
+│   ├── SearchBar
+│   ├── SelectAllCheckbox (with indeterminate state; shows "N of M selected")
+│   ├── TrashList (rows: checkbox · tool name · version count · last saved date)
+│   │   └── TrashDetail (type chip, script preview, version list, "Restore this version" button)
+│   └── BulkActions (Restore(N) + Delete(N) buttons; shown when items are checked)
 └── OutputPanel (conditionally rendered, slides up from bottom)
     ├── OutputHeader (tool name, exit code badge, Close button)
     └── OutputBody (monospace scrollable log output)
@@ -246,3 +319,9 @@ App
 | Viewing history | Sidebar + Content Area + History Panel (slides in from right) |
 | Clearing history | History Panel + confirmation dialog overlay |
 | Confirm delete | Inline confirmation within Tool Detail |
+| Viewing versions | Sidebar + Tool Detail + Version Panel (slides in from right) |
+| Running old version | Sidebar + Tool Detail + Version Panel + Output Panel open |
+| Restoring version | Version Panel (confirm dialog → live tool updated, panel returns to list) |
+| Viewing trash | Sidebar + Content Area + Trash Panel (slides in from right) |
+| Restoring from trash | Trash Panel + confirmation dialog overlay |
+| Permanently deleting from trash | Trash Panel + confirmation dialog overlay |

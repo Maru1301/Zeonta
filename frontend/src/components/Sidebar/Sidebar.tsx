@@ -5,6 +5,7 @@ import LayersIcon from '@mui/icons-material/Layers'
 import FileUploadIcon from '@mui/icons-material/FileUpload'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import HistoryIcon from '@mui/icons-material/History'
+import DeleteIcon from '@mui/icons-material/Delete'
 import type { ToolSummary, EnvironmentSummary } from '../../types/tool'
 import ToolList from './ToolList'
 
@@ -18,12 +19,14 @@ interface Props {
   onExport: () => void
   onImport: () => void
   onHistory: () => void
+  onTrash: () => void
+  trashCount: number
 }
 
 export default function Sidebar({
   tools, selectedToolId, activeEnvironment,
   onSelectTool, onNewTool, onManageEnvironments,
-  onExport, onImport, onHistory,
+  onExport, onImport, onHistory, onTrash, trashCount,
 }: Props) {
   return (
     <Box
@@ -114,6 +117,19 @@ export default function Sidebar({
           }}
         >
           History
+        </Button>
+        <Button
+          fullWidth
+          size="small"
+          startIcon={<DeleteIcon fontSize="small" />}
+          onClick={onTrash}
+          sx={{
+            justifyContent: 'flex-start',
+            color: trashCount > 0 ? '#f87171' : 'text.secondary',
+            '&:hover': { color: trashCount > 0 ? '#fca5a5' : 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
+          }}
+        >
+          Trash{trashCount > 0 ? ` (${trashCount})` : ''}
         </Button>
       </Box>
       <Divider />

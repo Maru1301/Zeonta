@@ -36,8 +36,9 @@ zeonta/
 ├── app.go                   # All Go methods exposed to the frontend via Wails
 ├── internal/
 │   ├── store/
-│   │   ├── store.go            # Open DB, run schema migration, expose Store struct
+│   │   ├── store.go            # Open DB, run schema migrations, expose Store struct
 │   │   ├── tools.go            # CRUD: ListTools, GetTool, CreateTool, UpdateTool, DeleteTool
+│   │   ├── versions.go         # Versioning + Trash: RecordVersion, ListVersions, GetVersion, RestoreToolVersion, ListDeletedTools, RestoreDeletedTool, ClearTrashByIDs
 │   │   ├── environments.go     # CRUD + SetActiveEnvironment, GetActiveEnvVars
 │   │   └── history.go          # RecordRun, ListHistory, GetHistoryEntry, ClearHistory
 │   └── executor/
@@ -144,17 +145,33 @@ CREATE TABLE IF NOT EXISTS env_entries (
 );
 
 CREATE TABLE IF NOT EXISTS run_history (
-    id        TEXT    PRIMARY KEY,
-    tool_id   TEXT    NOT NULL,
-    tool_name TEXT    NOT NULL,  -- snapshot; preserved if tool is renamed or deleted
-    ran_at    INTEGER NOT NULL,  -- Unix timestamp
-    exit_code INTEGER NOT NULL,
-    output    TEXT    NOT NULL DEFAULT '',
-    error     TEXT    NOT NULL DEFAULT ''
+    id         TEXT    PRIMARY KEY,
+    tool_id    TEXT    NOT NULL,
+    tool_name  TEXT    NOT NULL,  -- snapshot; preserved if tool is renamed or deleted
+    ran_at     INTEGER NOT NULL,  -- Unix timestamp
+    exit_code  INTEGER NOT NULL,
+    output     TEXT    NOT NULL DEFAULT '',
+    error      TEXT    NOT NULL DEFAULT '',
+    version_id TEXT    NOT NULL DEFAULT ''  -- added via ALTER TABLE migration; empty for pre-existing rows
 );
+
+CREATE TABLE IF NOT EXISTS tool_versions (
+    id       TEXT    PRIMARY KEY,
+    tool_id  TEXT    NOT NULL,   -- intentionally no FK: versions survive tool deletion
+    version  INTEGER NOT NULL,   -- auto-incremented per tool
+    name     TEXT    NOT NULL,
+    type     TEXT    NOT NULL,
+    body     TEXT    NOT NULL,
+    desc     TEXT    NOT NULL DEFAULT '',
+    params   TEXT    NOT NULL DEFAULT '[]',  -- JSON array
+    saved_at INTEGER NOT NULL
+);
+
+-- run_history.version_id was added via ALTER TABLE migration (empty string for pre-existing rows)
+-- version_id references the tool_versions.id that was active when this run occurred
 ```
 
-`ON DELETE CASCADE` ensures params are removed when a tool is deleted, and env entries are removed when their environment is deleted. `run_history` has **no** foreign key on `tool_id` so history is preserved after a tool is deleted.
+`ON DELETE CASCADE` ensures params are removed when a tool is deleted, and env entries are removed when their environment is deleted. `run_history` and `tool_versions` have **no** foreign key on `tool_id` so history and version snapshots are preserved after a tool is deleted (enabling Trash & Restore).
 
 ---
 
@@ -174,10 +191,15 @@ type AppState = {
   outputLines: string[]                         // streamed via tool:output events
   runResult: RunResult | null                   // set on tool:done event
   runCount: number                              // increments on each tool:done; triggers history refresh
+  saveCount: number                             // increments on each tool save; triggers version panel refresh
   environmentPanelOpen: boolean
   activeEnvironment: EnvironmentSummary | null
   exportPanelOpen: boolean
   historyPanelOpen: boolean
+  versionPanelToolId: string | null             // null = closed; set to tool ID to open
+  versionPanelInitialId: string | undefined     // pre-selects a version when panel opens
+  trashPanelOpen: boolean
+  trashCount: number                            // count of deleted tools; drives sidebar badge
 }
 ```
 
@@ -214,11 +236,13 @@ executor — write resolved script to temp file, start subprocess
       ▼
 executor — subprocess exits → emit tool:done event with RunResult
       │
-      ├── app.go records run to run_history (tool name snapshot, exit code, output)
+      ├── app.go looks up latest version ID for the tool, records run to run_history
+      │         (tool name snapshot, exit code, output, version_id)
       │
       ▼
 Frontend: OutputPanel displays streamed output + exit code badge
           runCount increments → HistoryPanel reloads if open
+          History entries link to the exact version that was run via version_id
 ```
 
 **Note:** Param values entered in the Tool Detail view are one-time overrides and are never saved back to the tool definition. To change defaults, the user uses the Edit flow.

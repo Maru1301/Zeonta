@@ -8,13 +8,14 @@ interface Props {
   onEdit: () => void
   onRun: (paramValues: Record<string, string>) => void
   onDeleted: () => void
+  onVersions: () => void
 }
 
-export default function ContentArea({ tool, onEdit, onRun, onDeleted }: Props) {
+export default function ContentArea({ tool, onEdit, onRun, onDeleted, onVersions }: Props) {
   return (
     <Box sx={{ height: '100%' }}>
       {tool ? (
-        <ToolDetail tool={tool} onEdit={onEdit} onRun={onRun} onDeleted={onDeleted} />
+        <ToolDetail tool={tool} onEdit={onEdit} onRun={onRun} onDeleted={onDeleted} onVersions={onVersions} />
       ) : (
         <EmptyState />
       )}

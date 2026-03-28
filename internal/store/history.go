@@ -9,29 +9,31 @@ import (
 
 // HistorySummary is a lightweight history record used in list views.
 type HistorySummary struct {
-	ID       string `json:"id"`
-	ToolID   string `json:"toolId"`
-	ToolName string `json:"toolName"`
-	RanAt    int64  `json:"ranAt"`
-	ExitCode int    `json:"exitCode"`
+	ID        string `json:"id"`
+	ToolID    string `json:"toolId"`
+	ToolName  string `json:"toolName"`
+	RanAt     int64  `json:"ranAt"`
+	ExitCode  int    `json:"exitCode"`
+	VersionID string `json:"versionId"`
 }
 
 // HistoryEntry is a full history record including output and error text.
 type HistoryEntry struct {
-	ID       string `json:"id"`
-	ToolID   string `json:"toolId"`
-	ToolName string `json:"toolName"`
-	RanAt    int64  `json:"ranAt"`
-	ExitCode int    `json:"exitCode"`
-	Output   string `json:"output"`
-	Error    string `json:"error"`
+	ID        string `json:"id"`
+	ToolID    string `json:"toolId"`
+	ToolName  string `json:"toolName"`
+	RanAt     int64  `json:"ranAt"`
+	ExitCode  int    `json:"exitCode"`
+	Output    string `json:"output"`
+	Error     string `json:"error"`
+	VersionID string `json:"versionId"`
 }
 
 // RecordRun saves a completed run to the history table.
-func (s *Store) RecordRun(toolID, toolName string, exitCode int, output, errText string) error {
+func (s *Store) RecordRun(toolID, toolName, versionID string, exitCode int, output, errText string) error {
 	_, err := s.db.Exec(
-		`INSERT INTO run_history (id, tool_id, tool_name, ran_at, exit_code, output, error)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO run_history (id, tool_id, tool_name, ran_at, exit_code, output, error, version_id)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		uuid.New().String(),
 		toolID,
 		toolName,
@@ -39,6 +41,7 @@ func (s *Store) RecordRun(toolID, toolName string, exitCode int, output, errText
 		exitCode,
 		output,
 		errText,
+		versionID,
 	)
 	if err != nil {
 		return fmt.Errorf("record run: %w", err)
@@ -49,11 +52,11 @@ func (s *Store) RecordRun(toolID, toolName string, exitCode int, output, errText
 // ListHistory returns the latest 200 history summaries.
 // Pass toolID="" to list across all tools; pass a specific ID to filter by tool.
 func (s *Store) ListHistory(toolID string) []HistorySummary {
-	query := `SELECT id, tool_id, tool_name, ran_at, exit_code
+	query := `SELECT id, tool_id, tool_name, ran_at, exit_code, version_id
 	          FROM run_history ORDER BY ran_at DESC LIMIT 200`
 	args := []any{}
 	if toolID != "" {
-		query = `SELECT id, tool_id, tool_name, ran_at, exit_code
+		query = `SELECT id, tool_id, tool_name, ran_at, exit_code, version_id
 		         FROM run_history WHERE tool_id = ? ORDER BY ran_at DESC LIMIT 200`
 		args = append(args, toolID)
 	}
@@ -67,7 +70,7 @@ func (s *Store) ListHistory(toolID string) []HistorySummary {
 	var list []HistorySummary
 	for rows.Next() {
 		var h HistorySummary
-		if err := rows.Scan(&h.ID, &h.ToolID, &h.ToolName, &h.RanAt, &h.ExitCode); err == nil {
+		if err := rows.Scan(&h.ID, &h.ToolID, &h.ToolName, &h.RanAt, &h.ExitCode, &h.VersionID); err == nil {
 			list = append(list, h)
 		}
 	}
@@ -80,11 +83,11 @@ func (s *Store) ListHistory(toolID string) []HistorySummary {
 // GetHistoryEntry returns the full record for a single history entry.
 func (s *Store) GetHistoryEntry(id string) (HistoryEntry, error) {
 	row := s.db.QueryRow(
-		`SELECT id, tool_id, tool_name, ran_at, exit_code, output, error
+		`SELECT id, tool_id, tool_name, ran_at, exit_code, output, error, version_id
 		 FROM run_history WHERE id = ?`, id,
 	)
 	var h HistoryEntry
-	if err := row.Scan(&h.ID, &h.ToolID, &h.ToolName, &h.RanAt, &h.ExitCode, &h.Output, &h.Error); err != nil {
+	if err := row.Scan(&h.ID, &h.ToolID, &h.ToolName, &h.RanAt, &h.ExitCode, &h.Output, &h.Error, &h.VersionID); err != nil {
 		return HistoryEntry{}, fmt.Errorf("history entry not found: %w", err)
 	}
 	return h, nil

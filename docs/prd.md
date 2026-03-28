@@ -90,7 +90,8 @@ As a user, I can permanently delete a tool I no longer need — so that the tool
 **Acceptance criteria:**
 - ✅ Each tool has a "Delete" action
 - ✅ A confirmation prompt is shown before deletion
-- ✅ After deletion, the tool is removed from the list and cannot be recovered
+- ✅ After deletion, the tool disappears from the sidebar; its version history and run history are preserved in the trash
+- ✅ Deleted tools can be recovered from the Trash panel
 
 ---
 
@@ -137,6 +138,40 @@ As a user, I can review the history of past tool runs — so that I can check wh
 - ✅ History entries are preserved even if the tool is later renamed or deleted (name is snapshotted at run time)
 - ✅ User can clear history for a specific tool or all tools; a confirmation dialog is shown before clearing
 - ✅ If the history panel is open when a new run completes, the list refreshes automatically
+
+---
+
+### F10 — Tool Versioning
+
+**User story:**
+As a user, I can view the full history of changes to a tool and restore any previous version — so that I can recover from mistakes and understand how a tool has evolved.
+
+**Acceptance criteria:**
+- ✅ Every save (create or update) automatically records a full snapshot of the tool (body, name, type, desc, params)
+- ✅ A "Versions" button on the Tool Detail view opens the Version Panel
+- ✅ The Version Panel lists all snapshots newest-first; the version matching the live tool's current content is tagged "current"
+- ✅ Clicking a version shows its script body, save date, and type
+- ✅ Any version can be run directly ("Run this version") without modifying the live tool
+- ✅ Any non-current version can be restored ("Restore to current"), updating the live tool without recording a new snapshot
+- ✅ The Version Panel refreshes automatically when a new version is saved
+- ✅ Each history entry links to the exact version that was run; clicking "View version" in History opens the Version Panel pre-selected to that snapshot
+
+---
+
+### F11 — Trash & Restore
+
+**User story:**
+As a user, I can recover tools I have deleted — so that accidental deletion does not result in permanent data loss.
+
+**Acceptance criteria:**
+- ✅ Deleted tools appear in the Trash panel, accessible from a Sidebar button with a count badge
+- ✅ The Trash panel shows all deleted tools with checkboxes for multi-selection
+- ✅ A select-all checkbox selects or deselects all visible items
+- ✅ Selected tools can be restored (latest version) or permanently deleted in bulk
+- ✅ Clicking a tool row opens a detail view showing its version history and script preview; a specific version can be selected and restored
+- ✅ All restore operations require a confirmation dialog before proceeding
+- ✅ The Trash panel stays open after restore and delete operations; the list reloads in place
+- ✅ The Trash panel refreshes automatically when a tool is deleted while the panel is open
 
 ---
 

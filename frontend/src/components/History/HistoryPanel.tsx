@@ -7,6 +7,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
+import HistoryEduIcon from '@mui/icons-material/HistoryEdu'
 import { ListHistory, GetHistoryEntry, ClearHistory } from '../../../wailsjs/go/main/App'
 import type { HistorySummary, HistoryEntry, ToolSummary } from '../../types/tool'
 
@@ -14,13 +15,14 @@ interface Props {
   tools: ToolSummary[]
   runCount: number
   onClose: () => void
+  onViewVersion: (toolId: string, versionId: string) => void
 }
 
 function formatDate(unixSec: number): string {
   return new Date(unixSec * 1000).toLocaleString()
 }
 
-export default function HistoryPanel({ tools, runCount, onClose }: Props) {
+export default function HistoryPanel({ tools, runCount, onClose, onViewVersion }: Props) {
   const [filterToolId, setFilterToolId] = useState('')
   const [summaries, setSummaries] = useState<HistorySummary[]>([])
   const [selected, setSelected] = useState<HistoryEntry | null>(null)
@@ -93,6 +95,20 @@ export default function HistoryPanel({ tools, runCount, onClose }: Props) {
             />
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>{formatDate(selected.ranAt)}</Typography>
           </Box>
+
+          {selected.versionId && (
+            <Box>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<HistoryEduIcon fontSize="small" />}
+                onClick={() => onViewVersion(selected.toolId, selected.versionId)}
+                sx={{ borderColor: 'divider', color: 'text.secondary' }}
+              >
+                View version
+              </Button>
+            </Box>
+          )}
 
           <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>Output</Typography>
           <Box

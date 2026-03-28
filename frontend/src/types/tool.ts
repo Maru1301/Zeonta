@@ -13,3 +13,6 @@ export type EnvironmentSummary = store.EnvironmentSummary
 export type EnvEntry = store.EnvEntry
 export type HistorySummary = store.HistorySummary
 export type HistoryEntry = store.HistoryEntry
+export type ToolVersionSummary = store.ToolVersionSummary
+export type ToolVersion = store.ToolVersion
+export type DeletedToolSummary = store.DeletedToolSummary
