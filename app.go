@@ -63,12 +63,13 @@ func parseImportFile(filename string, content []byte) ([]store.Tool, error) {
 
 // App is the main application struct. All public methods become Wails JS bindings.
 type App struct {
-	ctx   context.Context
-	store *store.Store
+	ctx     context.Context
+	store   *store.Store
+	version string
 }
 
-func NewApp(s *store.Store) *App {
-	return &App{store: s}
+func NewApp(s *store.Store, version string) *App {
+	return &App{store: s, version: version}
 }
 
 func (a *App) startup(ctx context.Context) {
@@ -326,7 +327,7 @@ func (a *App) ExportTools(ids []string) (bool, error) {
 		return false, nil // cancelled
 	}
 
-	data, err := json.MarshalIndent(exportFile{Version: "0.1.0", Tools: tools}, "", "  ")
+	data, err := json.MarshalIndent(exportFile{Version: a.version, Tools: tools}, "", "  ")
 	if err != nil {
 		return false, fmt.Errorf("marshal tools: %w", err)
 	}

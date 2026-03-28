@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
@@ -16,6 +17,19 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed wails.json
+var wailsJSON []byte
+
+func appVersion() string {
+	var cfg struct {
+		Version string `json:"version"`
+	}
+	if err := json.Unmarshal(wailsJSON, &cfg); err != nil || cfg.Version == "" {
+		return "0.0.0"
+	}
+	return cfg.Version
+}
+
 func main() {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -29,7 +43,7 @@ func main() {
 	}
 	defer s.Close()
 
-	app := NewApp(s)
+	app := NewApp(s, appVersion())
 
 	err = wails.Run(&options.App{
 		Title:  "Zeonta",
