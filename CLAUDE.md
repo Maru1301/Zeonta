@@ -80,8 +80,10 @@ The app version lives in `wails.json` (`"version"` field). Follow semantic versi
 - **Minor** (`0.X.0`): new feature or feature group released
 - **Major** (`X.0.0`): breaking change or major milestone
 
-**Every time a new feature is shipped, bump the minor version before committing.**
-Update `wails.json` as part of the same commit as the feature work.
+**When to bump:**
+- Bump **minor** once when a new feature is complete — in the same commit that finishes the feature
+- Fixes and tweaks made *during* feature development do not bump the version
+- Bump **patch** for bugs found *after* a version has been released
 
 ---
 
