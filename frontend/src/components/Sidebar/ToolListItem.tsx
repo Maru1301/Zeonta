@@ -14,7 +14,9 @@ export default function ToolListItem({ tool, selected, onClick }: Props) {
   const chipBg   = tool.type === 'shell'
     ? (isDark ? 'rgba(34,197,94,0.15)'  : 'rgba(34,197,94,0.25)')
     : (isDark ? 'rgba(99,179,237,0.15)' : 'rgba(99,179,237,0.25)')
-  const chipColor = tool.type === 'shell' ? '#4ade80' : '#63b3ed'
+  const chipColor = tool.type === 'shell'
+    ? (isDark ? '#4ade80' : '#16a34a')
+    : (isDark ? '#63b3ed' : '#2563eb')
 
   return (
     <Box
