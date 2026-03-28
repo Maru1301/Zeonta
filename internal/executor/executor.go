@@ -184,6 +184,7 @@ func runScript(body, ext string, cmdPrefix []string, env []string, emit func(str
 	args := append(cmdPrefix, tmp.Name())
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Env = env
+	hideWindow(cmd)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

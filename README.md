@@ -8,9 +8,13 @@ Zeonta is a desktop application for users who frequently work with shell scripts
 
 ## ✨ Key Features
 - 📝 **Script & Function Storage:** Write and store PowerShell/batch scripts or Go functions as reusable named tools.
-- ⚙️ **Parameterization:** Define input parameters and environment variables per tool, editable at runtime before each run.
+- ⚙️ **Parameterization:** Define input parameters per tool, editable at runtime before each run.
+- 🌐 **Global Environment Sets:** Create named sets of environment variables (e.g. "Dev", "Prod") and activate one globally — all tools run against it automatically.
 - 🚀 **One-Click Execution:** Run any stored tool instantly from the UI — output streams live in a dedicated output panel.
 - 🛠 **Full Tool Management:** Add, modify, and delete tools at any time.
+- 🕒 **Version History:** Every tool save is snapshotted automatically. Browse past versions, run old versions directly, or restore any previous state.
+- 🗑 **Trash & Restore:** Deleted tools are kept in a Trash panel. Restore individual versions or bulk-restore multiple tools. Permanently delete when ready.
+- 📋 **Run History:** Every execution is logged with output, exit code, and a link to the exact version that was run.
 - 📦 **Offline & Self-Contained:** Runs entirely offline. All tool data is stored locally in `%APPDATA%\Zeonta\zeonta.db`.
 
 ## 💡 Using Zeonta
@@ -18,28 +22,44 @@ Zeonta is a desktop application for users who frequently work with shell scripts
 ### Creating a Tool
 1. Click **+ New Tool** in the sidebar.
 2. Fill in the tool name, select the type (Shell or Go), and write the script body.
-3. Optionally add **Parameters** and **Environment Variables**.
+3. Optionally add **Parameters**.
 4. Click **Save** — the tool appears in the sidebar immediately.
 
 ### Variable Substitution
-Use `{{VARIABLE_NAME}}` syntax in your script body to reference parameters or environment variables:
+Use `{{KEY}}` syntax to reference environment variables, and `[[PARAM]]` syntax to reference parameters:
 
 ```powershell
-# Example shell tool with a parameter {{TARGET}} and env var {{BASE_URL}}
-curl {{BASE_URL}}/api/{{TARGET}}
+# Example shell tool with a parameter [[TARGET]] and env var {{BASE_URL}}
+curl {{BASE_URL}}/api/[[TARGET]]
 ```
 
 **Resolution order at runtime:**
-1. `{{ENV_VAR}}` references are resolved first — including inside parameter values.
-2. `{{PARAM}}` references are resolved in the script body.
+1. `{{ENV_VAR}}` references are resolved first using the active environment set — including inside parameter default values.
+2. `[[PARAM]]` references are resolved in the script body with the user-supplied values.
 3. Environment variables are also injected into the subprocess environment (accessible as `$env:KEY` in PowerShell).
+
+### Environment Sets
+Instead of per-tool environment variables, Zeonta uses **global environment sets**. Create a named set (e.g. "Dev", "Prod") with any number of key-value pairs, then mark one as active. All tools automatically run against the active environment. Switch environments without touching individual tools.
 
 ### Running a Tool
 - Click **Run** on a selected tool.
-- If the tool has parameters or environment variables, a run panel slides in with all values pre-filled from their defaults. Edit as needed, then click **Run Now**.
+- If the tool has parameters, editable inputs are shown inline in the tool detail view, pre-filled with their defaults. Edit as needed and click **Run**.
 - Output streams live in the output panel at the bottom. Exit code is shown on completion.
 
-> Run-time edits to parameter and env var values are **not** saved back to the tool. To change defaults, use the **Edit** action.
+> Run-time edits to parameter values are **not** saved back to the tool. To change defaults, use the **Edit** action.
+
+### Viewing Tool Versions
+Click the clock icon on any tool to open the **Versions panel**. It lists every saved snapshot of the tool, newest first. From the panel you can:
+- Preview the script body at any point in time.
+- **Run this version** — execute an old snapshot directly without changing the live tool.
+- **Restore to current** — update the live tool to match that snapshot.
+
+Each run in the History panel also links back to the exact version that was executed.
+
+### Using Trash
+Deleted tools are not permanently removed — they move to the **Trash**. A badge on the Trash button in the sidebar shows how many deleted tools are waiting. From the Trash panel you can:
+- Restore individual tools (from any saved version) or bulk-restore multiple tools at once.
+- Permanently delete tools when you are sure you no longer need them.
 
 ## 🛠 Tech Stack
 | Layer | Technology |

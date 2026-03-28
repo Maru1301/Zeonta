@@ -117,6 +117,7 @@ func (a *App) DeleteTool(id string) error {
 
 // RunTool executes a tool, streaming output via Wails events.
 // Env vars are sourced from the currently active environment set.
+// Each run is recorded to history automatically.
 func (a *App) RunTool(input executor.RunInput) executor.RunResult {
 	tool, err := a.store.GetTool(input.ToolID)
 	if err != nil {
@@ -129,8 +130,123 @@ func (a *App) RunTool(input executor.RunInput) executor.RunResult {
 		runtime.EventsEmit(a.ctx, "tool:output", line)
 	})
 
+	// Capture the current version ID so history entries link back to the snapshot.
+	versionID := ""
+	if vs := a.store.ListVersions(tool.ID); len(vs) > 0 {
+		versionID = vs[0].ID
+	}
+	_ = a.store.RecordRun(tool.ID, tool.Name, versionID, result.ExitCode, result.Output, result.Error)
+
 	runtime.EventsEmit(a.ctx, "tool:done", result)
 	return result
+}
+
+// --- Version methods ---
+
+// ListToolVersions returns all version summaries for a tool, newest first.
+func (a *App) ListToolVersions(toolID string) []store.ToolVersionSummary {
+	return a.store.ListVersions(toolID)
+}
+
+// GetToolVersion returns the full snapshot for a single version record.
+func (a *App) GetToolVersion(id string) (store.ToolVersion, error) {
+	v, err := a.store.GetVersion(id)
+	if err != nil {
+		return store.ToolVersion{}, fmt.Errorf("could not load version: %w", err)
+	}
+	return v, nil
+}
+
+// RestoreToolVersion rolls the live tool back to the given version snapshot
+// without recording a new version. The targeted version becomes current again.
+func (a *App) RestoreToolVersion(versionID string) (store.Tool, error) {
+	tool, err := a.store.RestoreToolVersion(versionID)
+	if err != nil {
+		return store.Tool{}, fmt.Errorf("could not restore version: %w", err)
+	}
+	return tool, nil
+}
+
+// RunToolVersion executes an old version's script directly without modifying
+// the live tool. Uses the current active environment.
+func (a *App) RunToolVersion(versionID string, paramValues map[string]string) executor.RunResult {
+	v, err := a.store.GetVersion(versionID)
+	if err != nil {
+		return executor.RunResult{Error: "version not found"}
+	}
+	tool := store.Tool{ID: v.ToolID, Name: v.Name, Type: v.Type, Body: v.Body, Params: v.Params}
+	envVars := a.store.GetActiveEnvVars()
+	input := executor.RunInput{ToolID: v.ToolID, ParamValues: paramValues}
+
+	result := executor.Run(tool, input, envVars, func(line string) {
+		runtime.EventsEmit(a.ctx, "tool:output", line)
+	})
+
+	_ = a.store.RecordRun(v.ToolID, v.Name, v.ID, result.ExitCode, result.Output, result.Error)
+	runtime.EventsEmit(a.ctx, "tool:done", result)
+	return result
+}
+
+// --- Trash methods ---
+
+// ListDeletedTools returns summaries of tools that have been deleted but still
+// have version snapshots available for recovery.
+func (a *App) ListDeletedTools() []store.DeletedToolSummary {
+	return a.store.ListDeletedTools()
+}
+
+// RestoreDeletedTool recreates a deleted tool from the specified version,
+// reusing its original ID so all prior versions are re-attached.
+func (a *App) RestoreDeletedTool(versionID string) (store.Tool, error) {
+	tool, err := a.store.RestoreDeletedTool(versionID)
+	if err != nil {
+		return store.Tool{}, fmt.Errorf("could not restore tool: %w", err)
+	}
+	return tool, nil
+}
+
+// ClearTrash permanently deletes all versions and run history for tools that
+// have been deleted. This action cannot be undone.
+func (a *App) ClearTrash() error {
+	if err := a.store.ClearTrash(); err != nil {
+		return fmt.Errorf("could not clear trash: %w", err)
+	}
+	return nil
+}
+
+// ClearTrashByIDs permanently deletes versions and run history for the
+// specified deleted tool IDs. Only orphaned tools are affected.
+func (a *App) ClearTrashByIDs(toolIDs []string) error {
+	if err := a.store.ClearTrashByIDs(toolIDs); err != nil {
+		return fmt.Errorf("could not delete selected trash: %w", err)
+	}
+	return nil
+}
+
+// --- History methods ---
+
+// ListHistory returns the latest 200 history summaries.
+// Pass toolID="" to list all tools; pass a specific ID to filter by tool.
+func (a *App) ListHistory(toolID string) []store.HistorySummary {
+	return a.store.ListHistory(toolID)
+}
+
+// GetHistoryEntry returns the full record for a single history entry.
+func (a *App) GetHistoryEntry(id string) (store.HistoryEntry, error) {
+	entry, err := a.store.GetHistoryEntry(id)
+	if err != nil {
+		return store.HistoryEntry{}, fmt.Errorf("could not load history entry: %w", err)
+	}
+	return entry, nil
+}
+
+// ClearHistory deletes history entries.
+// Pass toolID="" to clear all history; pass a specific ID to clear only that tool's history.
+func (a *App) ClearHistory(toolID string) error {
+	if err := a.store.ClearHistory(toolID); err != nil {
+		return fmt.Errorf("could not clear history: %w", err)
+	}
+	return nil
 }
 
 // --- Environment methods ---

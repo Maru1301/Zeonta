@@ -111,7 +111,12 @@ func (s *Store) CreateTool(tool Tool) (Tool, error) {
 		return Tool{}, err
 	}
 
-	return tool, tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return Tool{}, err
+	}
+
+	_ = s.RecordVersion(tool)
+	return tool, nil
 }
 
 func (s *Store) UpdateTool(tool Tool) (Tool, error) {
@@ -144,7 +149,12 @@ func (s *Store) UpdateTool(tool Tool) (Tool, error) {
 		return Tool{}, err
 	}
 
-	return tool, tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return Tool{}, err
+	}
+
+	_ = s.RecordVersion(tool)
+	return tool, nil
 }
 
 func (s *Store) DeleteTool(id string) error {

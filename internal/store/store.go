@@ -45,6 +45,28 @@ CREATE TABLE IF NOT EXISTS env_entries (
     sort_order     INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS tool_versions (
+    id       TEXT    PRIMARY KEY,
+    tool_id  TEXT    NOT NULL,
+    version  INTEGER NOT NULL,
+    name     TEXT    NOT NULL,
+    type     TEXT    NOT NULL,
+    body     TEXT    NOT NULL,
+    desc     TEXT    NOT NULL DEFAULT '',
+    params   TEXT    NOT NULL DEFAULT '[]',
+    saved_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS run_history (
+    id        TEXT    PRIMARY KEY,
+    tool_id   TEXT    NOT NULL,
+    tool_name TEXT    NOT NULL,
+    ran_at    INTEGER NOT NULL,
+    exit_code INTEGER NOT NULL,
+    output    TEXT    NOT NULL DEFAULT '',
+    error     TEXT    NOT NULL DEFAULT ''
+);
+
 PRAGMA foreign_keys = ON;
 `
 
@@ -58,10 +80,22 @@ func Open(path string) (*Store, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
+	// SQLite foreign key enforcement is per-connection. Use a single connection
+	// so the pragma persists for the lifetime of the store.
+	db.SetMaxOpenConns(1)
+
+	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("enable foreign keys: %w", err)
+	}
+
 	if _, err := db.Exec(schema); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("run migrations: %w", err)
 	}
+
+	// Additive migrations — errors are ignored when the column already exists.
+	_, _ = db.Exec(`ALTER TABLE run_history ADD COLUMN version_id TEXT NOT NULL DEFAULT ''`)
 
 	return &Store{db: db}, nil
 }
