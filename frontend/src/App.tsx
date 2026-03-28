@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ThemeProvider, CssBaseline, Box, Snackbar, Alert } from '@mui/material'
 import { EventsOn } from '../wailsjs/runtime/runtime'
 import { ListTools, GetTool, RunTool, ListEnvironments, ExportTools, ImportTools } from '../wailsjs/go/main/App'
@@ -7,7 +7,8 @@ import { ListDeletedTools } from '../wailsjs/go/main/App'
 import HistoryPanel from './components/History/HistoryPanel'
 import VersionPanel from './components/Versions/VersionPanel'
 import TrashPanel from './components/Versions/TrashPanel'
-import theme from './theme'
+import { createAppTheme } from './theme'
+import type { AppThemeMode } from './theme'
 import type { Tool, ToolSummary, RunResult, EnvironmentSummary } from './types/tool'
 import Sidebar from './components/Sidebar/Sidebar'
 import ContentArea from './components/ContentArea/ContentArea'
@@ -19,6 +20,26 @@ import ExportPanel from './components/Exports/ExportPanel'
 export type EditPanelMode = 'create' | 'edit' | null
 
 export default function App() {
+  const [mode, setMode] = useState<AppThemeMode>(() => {
+    const saved = localStorage.getItem('zeonta-theme') as AppThemeMode | null
+    if (saved === 'light' || saved === 'dark') return saved
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  })
+
+  const theme = useMemo(() => createAppTheme(mode), [mode])
+
+  const toggleMode = useCallback(() => {
+    setMode(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark'
+      localStorage.setItem('zeonta-theme', next)
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', mode)
+  }, [mode])
+
   const [tools, setTools] = useState<ToolSummary[]>([])
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null)
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null)
@@ -181,6 +202,8 @@ export default function App() {
           onHistory={() => setHistoryPanelOpen(true)}
           onTrash={() => setTrashPanelOpen(true)}
           trashCount={trashCount}
+          themeMode={mode}
+          onToggleTheme={toggleMode}
         />
 
         <Box className="flex flex-col flex-1 overflow-hidden">

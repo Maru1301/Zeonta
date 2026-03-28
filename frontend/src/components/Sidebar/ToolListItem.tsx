@@ -1,4 +1,4 @@
-import { Box, Typography, Chip } from '@mui/material'
+import { Box, Typography, Chip, useTheme } from '@mui/material'
 import type { ToolSummary } from '../../types/tool'
 
 interface Props {
@@ -8,6 +8,16 @@ interface Props {
 }
 
 export default function ToolListItem({ tool, selected, onClick }: Props) {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const chipBg   = tool.type === 'shell'
+    ? (isDark ? 'rgba(34,197,94,0.15)'  : 'rgba(34,197,94,0.25)')
+    : (isDark ? 'rgba(99,179,237,0.15)' : 'rgba(99,179,237,0.25)')
+  const chipColor = tool.type === 'shell'
+    ? (isDark ? '#4ade80' : '#16a34a')
+    : (isDark ? '#63b3ed' : '#2563eb')
+
   return (
     <Box
       onClick={onClick}
@@ -17,14 +27,14 @@ export default function ToolListItem({ tool, selected, onClick }: Props) {
         cursor: 'pointer',
         bgcolor: selected ? 'rgba(124,106,247,0.15)' : 'transparent',
         borderLeft: selected ? '2px solid #7c6af7' : '2px solid transparent',
-        '&:hover': { bgcolor: selected ? 'rgba(124,106,247,0.15)' : 'rgba(255,255,255,0.04)' },
+        '&:hover': { bgcolor: selected ? 'rgba(124,106,247,0.15)' : 'action.hover' },
       }}
     >
       <Box className="flex items-center justify-between gap-2">
         <Typography
           variant="body2"
           noWrap
-          sx={{ color: selected ? '#dcdcdc' : '#aaaaaa', fontWeight: selected ? 500 : 400 }}
+          sx={{ color: selected ? 'text.primary' : 'text.secondary', fontWeight: selected ? 500 : 400 }}
         >
           {tool.name}
         </Typography>
@@ -34,15 +44,15 @@ export default function ToolListItem({ tool, selected, onClick }: Props) {
           sx={{
             height: 18,
             fontSize: 10,
-            bgcolor: tool.type === 'shell' ? 'rgba(34,197,94,0.15)' : 'rgba(99,179,237,0.15)',
-            color: tool.type === 'shell' ? '#4ade80' : '#63b3ed',
+            bgcolor: chipBg,
+            color: chipColor,
             border: 'none',
             flexShrink: 0,
           }}
         />
       </Box>
       {tool.desc && (
-        <Typography variant="caption" noWrap sx={{ color: '#666', display: 'block', mt: 0.25 }}>
+        <Typography variant="caption" noWrap sx={{ color: 'text.disabled', display: 'block', mt: 0.25 }}>
           {tool.desc}
         </Typography>
       )}

@@ -1,4 +1,4 @@
-import { Box, Button, Typography, Divider } from '@mui/material'
+import { Box, Button, Typography, Divider, Tooltip, IconButton } from '@mui/material'
 import logo from '../../assets/images/zeonta-256.png'
 import AddIcon from '@mui/icons-material/Add'
 import LayersIcon from '@mui/icons-material/Layers'
@@ -6,7 +6,10 @@ import FileUploadIcon from '@mui/icons-material/FileUpload'
 import FileDownloadIcon from '@mui/icons-material/FileDownload'
 import HistoryIcon from '@mui/icons-material/History'
 import DeleteIcon from '@mui/icons-material/Delete'
+import LightModeIcon from '@mui/icons-material/LightMode'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
 import type { ToolSummary, EnvironmentSummary } from '../../types/tool'
+import type { AppThemeMode } from '../../theme'
 import ToolList from './ToolList'
 
 interface Props {
@@ -21,12 +24,15 @@ interface Props {
   onHistory: () => void
   onTrash: () => void
   trashCount: number
+  themeMode: AppThemeMode
+  onToggleTheme: () => void
 }
 
 export default function Sidebar({
   tools, selectedToolId, activeEnvironment,
   onSelectTool, onNewTool, onManageEnvironments,
   onExport, onImport, onHistory, onTrash, trashCount,
+  themeMode, onToggleTheme,
 }: Props) {
   return (
     <Box
@@ -47,6 +53,16 @@ export default function Sidebar({
         <Typography variant="h6" sx={{ color: 'text.secondary', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           Zeonta
         </Typography>
+        <Box sx={{ flex: 1 }} />
+        <Tooltip title={themeMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} placement="right">
+          <IconButton
+            size="small"
+            onClick={onToggleTheme}
+            sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+          >
+            {themeMode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
       </Box>
 
       <Divider />
@@ -61,7 +77,7 @@ export default function Sidebar({
           sx={{
             justifyContent: 'flex-start',
             color: 'text.secondary',
-            '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
+            '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
           }}
         >
           New Tool
@@ -71,7 +87,7 @@ export default function Sidebar({
             size="small"
             startIcon={<FileUploadIcon fontSize="small" />}
             onClick={onImport}
-            sx={{ flex: 1, justifyContent: 'flex-start', color: 'text.secondary', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+            sx={{ flex: 1, justifyContent: 'flex-start', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
           >
             Import
           </Button>
@@ -79,7 +95,7 @@ export default function Sidebar({
             size="small"
             startIcon={<FileDownloadIcon fontSize="small" />}
             onClick={onExport}
-            sx={{ flex: 1, justifyContent: 'flex-start', color: 'text.secondary', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
+            sx={{ flex: 1, justifyContent: 'flex-start', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
           >
             Export
           </Button>
@@ -113,7 +129,7 @@ export default function Sidebar({
           sx={{
             justifyContent: 'flex-start',
             color: 'text.secondary',
-            '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
+            '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
           }}
         >
           History
@@ -126,7 +142,7 @@ export default function Sidebar({
           sx={{
             justifyContent: 'flex-start',
             color: trashCount > 0 ? '#f87171' : 'text.secondary',
-            '&:hover': { color: trashCount > 0 ? '#fca5a5' : 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
+            '&:hover': { color: trashCount > 0 ? '#fca5a5' : 'text.primary', bgcolor: 'action.hover' },
           }}
         >
           Trash{trashCount > 0 ? ` (${trashCount})` : ''}
@@ -142,7 +158,7 @@ export default function Sidebar({
           sx={{
             justifyContent: 'flex-start',
             color: activeEnvironment ? '#7c6af7' : 'text.secondary',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' },
+            '&:hover': { bgcolor: 'action.hover' },
           }}
         >
           {activeEnvironment ? `ENV: ${activeEnvironment.name}` : 'No Environment'}
