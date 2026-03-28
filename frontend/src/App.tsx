@@ -22,7 +22,8 @@ export type EditPanelMode = 'create' | 'edit' | null
 export default function App() {
   const [mode, setMode] = useState<AppThemeMode>(() => {
     const saved = localStorage.getItem('zeonta-theme') as AppThemeMode | null
-    return saved === 'light' ? 'light' : 'dark'
+    if (saved === 'light' || saved === 'dark') return saved
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
   })
 
   const theme = useMemo(() => createAppTheme(mode), [mode])
