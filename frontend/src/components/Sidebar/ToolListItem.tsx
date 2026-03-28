@@ -17,14 +17,14 @@ export default function ToolListItem({ tool, selected, onClick }: Props) {
         cursor: 'pointer',
         bgcolor: selected ? 'rgba(124,106,247,0.15)' : 'transparent',
         borderLeft: selected ? '2px solid #7c6af7' : '2px solid transparent',
-        '&:hover': { bgcolor: selected ? 'rgba(124,106,247,0.15)' : 'rgba(255,255,255,0.04)' },
+        '&:hover': { bgcolor: selected ? 'rgba(124,106,247,0.15)' : 'action.hover' },
       }}
     >
       <Box className="flex items-center justify-between gap-2">
         <Typography
           variant="body2"
           noWrap
-          sx={{ color: selected ? '#dcdcdc' : '#aaaaaa', fontWeight: selected ? 500 : 400 }}
+          sx={{ color: selected ? 'text.primary' : 'text.secondary', fontWeight: selected ? 500 : 400 }}
         >
           {tool.name}
         </Typography>
@@ -42,7 +42,7 @@ export default function ToolListItem({ tool, selected, onClick }: Props) {
         />
       </Box>
       {tool.desc && (
-        <Typography variant="caption" noWrap sx={{ color: '#666', display: 'block', mt: 0.25 }}>
+        <Typography variant="caption" noWrap sx={{ color: 'text.disabled', display: 'block', mt: 0.25 }}>
           {tool.desc}
         </Typography>
       )}
