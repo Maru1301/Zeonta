@@ -1,4 +1,4 @@
-import { Box, Typography, Chip } from '@mui/material'
+import { Box, Typography, Chip, useTheme } from '@mui/material'
 import type { ToolSummary } from '../../types/tool'
 
 interface Props {
@@ -8,6 +8,14 @@ interface Props {
 }
 
 export default function ToolListItem({ tool, selected, onClick }: Props) {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const chipBg   = tool.type === 'shell'
+    ? (isDark ? 'rgba(34,197,94,0.15)'  : 'rgba(34,197,94,0.25)')
+    : (isDark ? 'rgba(99,179,237,0.15)' : 'rgba(99,179,237,0.25)')
+  const chipColor = tool.type === 'shell' ? '#4ade80' : '#63b3ed'
+
   return (
     <Box
       onClick={onClick}
@@ -34,8 +42,8 @@ export default function ToolListItem({ tool, selected, onClick }: Props) {
           sx={{
             height: 18,
             fontSize: 10,
-            bgcolor: tool.type === 'shell' ? 'rgba(34,197,94,0.15)' : 'rgba(99,179,237,0.15)',
-            color: tool.type === 'shell' ? '#4ade80' : '#63b3ed',
+            bgcolor: chipBg,
+            color: chipColor,
             border: 'none',
             flexShrink: 0,
           }}
