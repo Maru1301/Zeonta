@@ -46,9 +46,10 @@ func main() {
 	app := NewApp(s, appVersion())
 
 	err = wails.Run(&options.App{
-		Title:  "Zeonta",
-		Width:  1280,
-		Height: 800,
+		Title:     "Zeonta",
+		Width:     1280,
+		Height:    800,
+		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

@@ -7,15 +7,16 @@ import { ListDeletedTools } from '../wailsjs/go/main/App'
 import { createAppTheme } from './theme'
 import type { AppThemeMode } from './theme'
 import type { Tool, ToolSummary, RunResult, EnvironmentSummary } from './types/tool'
-import type { TabState, AppTab, RightSidebarContent } from './types/tabs'
+import type { TabState, AppTab, RightSidebarContent, ActiveFunction } from './types/tabs'
 import { initialTabState, getActiveTab, getSlotActiveTab } from './types/tabs'
 import { useResizable } from './hooks/useResizable'
-import Sidebar from './components/Sidebar/Sidebar'
+import TitleBar from './components/Layout/TitleBar'
+import FunctionBar from './components/Layout/FunctionBar'
+import SidePanel from './components/Layout/SidePanel'
 import MainArea from './components/Layout/MainArea'
 import RightSidebar from './components/Layout/RightSidebar'
 import OutputPanel from './components/OutputPanel/OutputPanel'
 
-export type EditPanelMode = 'create' | 'edit' | null
 
 export default function App() {
   // ── Theme ────────────────────────────────────────────────
@@ -115,10 +116,14 @@ export default function App() {
       ) as TabState['slots']
       return { ...prev, slots: newSlots, activeSlot: slotIndex }
     })
-    // auto-close right sidebar if new active tab is not a tool tab
+    // close edit/versions sidebar when switching away from tool tabs
     setTabState(prev => {
       const tab = prev.slots[slotIndex].tabs[tabIndex]
-      if (tab?.kind !== 'tool') setRightSidebar(null)
+      if (tab?.kind !== 'tool') {
+        setRightSidebar(prev =>
+          prev?.kind === 'versions' ? null : prev
+        )
+      }
       return prev
     })
   }, [])
@@ -134,6 +139,48 @@ export default function App() {
       // collapse split if slot 1 becomes empty
       const splitEnabled = slotIndex === 1 && newTabs.length === 0 ? false : prev.splitEnabled
       return { ...prev, slots: newSlots, splitEnabled }
+    })
+  }, [])
+
+  const reorderTabs = useCallback((fromSlot: 0 | 1, fromIndex: number, toSlot: 0 | 1, toIndex: number) => {
+    setTabState(prev => {
+      if (fromSlot === toSlot) {
+        // same-slot reorder
+        const slot = prev.slots[fromSlot]
+        const newTabs = [...slot.tabs]
+        const [moved] = newTabs.splice(fromIndex, 1)
+        newTabs.splice(toIndex, 0, moved)
+        let activeIdx = slot.activeTabIndex
+        if (activeIdx === fromIndex) {
+          activeIdx = toIndex > fromIndex ? toIndex - 1 : toIndex
+        } else if (fromIndex < toIndex && activeIdx > fromIndex && activeIdx <= toIndex) {
+          activeIdx--
+        } else if (fromIndex > toIndex && activeIdx < fromIndex && activeIdx >= toIndex) {
+          activeIdx++
+        }
+        const newSlots = prev.slots.map((s, i) =>
+          i === fromSlot ? { ...s, tabs: newTabs, activeTabIndex: activeIdx } : s
+        ) as TabState['slots']
+        return { ...prev, slots: newSlots }
+      } else {
+        // cross-slot move: remove from source, insert into destination
+        const src = prev.slots[fromSlot]
+        const dst = prev.slots[toSlot]
+        const tab = src.tabs[fromIndex]
+        const newSrcTabs = src.tabs.filter((_, i) => i !== fromIndex)
+        const newSrcActiveIdx = Math.min(src.activeTabIndex, Math.max(0, newSrcTabs.length - 1))
+        const insertAt = Math.min(toIndex, dst.tabs.length)
+        const newDstTabs = [...dst.tabs]
+        newDstTabs.splice(insertAt, 0, tab)
+        const newSlots = prev.slots.map((s, i) => {
+          if (i === fromSlot) return { ...s, tabs: newSrcTabs, activeTabIndex: newSrcActiveIdx }
+          if (i === toSlot) return { ...s, tabs: newDstTabs, activeTabIndex: insertAt }
+          return s
+        }) as TabState['slots']
+        // collapse split if source slot 1 becomes empty
+        const splitEnabled = fromSlot === 1 && newSrcTabs.length === 0 ? false : prev.splitEnabled
+        return { ...prev, slots: newSlots, splitEnabled, activeSlot: toSlot }
+      }
     })
   }, [])
 
@@ -168,22 +215,38 @@ export default function App() {
 
   // ── Right sidebar ────────────────────────────────────────
   const [rightSidebar, setRightSidebar] = useState<RightSidebarContent>(null)
-
-  const handleEdit = useCallback(() => {
-    setRightSidebar({ kind: 'edit', mode: 'edit' })
-  }, [])
+  const [envRefreshSignal, setEnvRefreshSignal] = useState(0)
 
   const handleNewTool = useCallback(() => {
-    setRightSidebar({ kind: 'edit', mode: 'create' })
-  }, [])
+    openTab({ id: 'new-tool', kind: 'new-tool', title: 'New Tool' })
+  }, [openTab])
 
-  const handleVersions = useCallback((toolId: string) => {
-    setRightSidebar({ kind: 'versions', toolId })
-  }, [])
+  const historyVersionCache = useRef<Record<string, { toolId: string; versionId: string }>>({})
 
   const handleViewVersion = useCallback((toolId: string, versionId: string) => {
     setRightSidebar({ kind: 'versions', toolId, initialVersionId: versionId })
   }, [])
+
+  const handleHistoryVersionFound = useCallback((entryId: string, toolId: string, versionId: string) => {
+    historyVersionCache.current[entryId] = { toolId, versionId }
+  }, [])
+
+  // Auto-sync right sidebar with the active tool tab
+  useEffect(() => {
+    const slot = tabState.slots[tabState.activeSlot]
+    const activeTab = slot.tabs[slot.activeTabIndex] ?? null
+    if (activeTab?.kind === 'tool' && activeTab.toolId) {
+      setRightSidebar(prev =>
+        prev?.kind === 'versions' && prev.toolId === activeTab.toolId ? prev
+          : { kind: 'versions', toolId: activeTab.toolId! }
+      )
+    } else if (activeTab?.kind === 'history-detail' && activeTab.entryId) {
+      const ver = historyVersionCache.current[activeTab.entryId]
+      setRightSidebar(ver ? { kind: 'versions', toolId: ver.toolId, initialVersionId: ver.versionId } : null)
+    } else {
+      setRightSidebar(prev => prev?.kind === 'versions' ? null : prev)
+    }
+  }, [tabState])
 
   const handleToolSaved = useCallback(async (id: string) => {
     await refreshTools()
@@ -200,11 +263,14 @@ export default function App() {
       })) as TabState['slots']
       return { ...prev, slots: newSlots }
     })
-    // if creating new tool, switch edit mode to 'edit'
-    setRightSidebar(prev => prev?.kind === 'edit' && prev.mode === 'create'
-      ? { kind: 'edit', mode: 'edit' }
-      : prev
-    )
+    // close new-tool tab after saving
+    setTabState(prev => {
+      const newSlots = prev.slots.map(slot => {
+        const newTabs = slot.tabs.filter(t => t.id !== 'new-tool')
+        return { ...slot, tabs: newTabs, activeTabIndex: Math.min(slot.activeTabIndex, Math.max(0, newTabs.length - 1)) }
+      }) as TabState['slots']
+      return { ...prev, slots: newSlots }
+    })
     // open tool tab if not already open
     const toolSummary = (await ListTools().catch(() => [])).find((t: ToolSummary) => t.id === id)
     if (toolSummary) {
@@ -275,20 +341,37 @@ export default function App() {
   }, [handleRunStart])
 
   // ── Layout sizes ─────────────────────────────────────────
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
-    localStorage.getItem('zeonta-sidebar-collapsed') === 'true'
+  const [activeFunction, setActiveFunction] = useState<ActiveFunction>('tools')
+  const [leftPanelOpen, setLeftPanelOpen] = useState(() =>
+    localStorage.getItem('zeonta-left-panel-open') !== 'false'
   )
+  const [rightSidebarVisible, setRightSidebarVisible] = useState(true)
   const [sidebarWidth, setSidebarWidth] = useResizable('zeonta-sidebar-width', 240)
   const [rightSidebarWidth, setRightSidebarWidth] = useResizable('zeonta-right-sidebar-width', 500)
   const [outputPanelHeight, setOutputPanelHeight] = useResizable('zeonta-output-height', 220)
   const [splitRatio, setSplitRatio] = useResizable('zeonta-split-ratio', 50)
 
-  const toggleSidebarCollapsed = useCallback(() => {
-    setSidebarCollapsed(prev => {
+  const handleSelectFunction = useCallback((fn: ActiveFunction) => {
+    if (fn === activeFunction && leftPanelOpen) {
+      setLeftPanelOpen(false)
+      localStorage.setItem('zeonta-left-panel-open', 'false')
+    } else {
+      setActiveFunction(fn)
+      setLeftPanelOpen(true)
+      localStorage.setItem('zeonta-left-panel-open', 'true')
+    }
+  }, [activeFunction, leftPanelOpen])
+
+  const toggleLeftPanel = useCallback(() => {
+    setLeftPanelOpen(prev => {
       const next = !prev
-      localStorage.setItem('zeonta-sidebar-collapsed', String(next))
+      localStorage.setItem('zeonta-left-panel-open', String(next))
       return next
     })
+  }, [])
+
+  const toggleRightSidebar = useCallback(() => {
+    setRightSidebarVisible(prev => !prev)
   }, [])
 
   // track main area container width for split ratio calculation
@@ -348,78 +431,122 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box className="flex h-screen overflow-hidden" sx={{ bgcolor: 'background.default' }}>
+      <Box className="flex flex-col h-screen overflow-hidden" sx={{ bgcolor: 'background.default' }}>
 
-        <Sidebar
-          tools={tools}
-          selectedToolId={selectedToolId}
-          activeEnvironment={activeEnvironment}
-          onSelectTool={handleSelectTool}
-          onNewTool={handleNewTool}
-          onManageEnvironments={() => openTab({ id: 'environment', kind: 'environment', title: 'Environments' })}
-          onExport={() => openTab({ id: 'export', kind: 'export', title: 'Export' })}
-          onImport={handleImport}
-          onHistory={() => openTab({ id: 'history', kind: 'history', title: 'History' })}
-          onTrash={() => openTab({ id: 'trash', kind: 'trash', title: 'Trash' })}
-          trashCount={trashCount}
-          themeMode={mode}
-          onToggleTheme={toggleMode}
-          collapsed={sidebarCollapsed}
-          onToggleCollapsed={toggleSidebarCollapsed}
-          width={sidebarWidth}
-          onResizeWidth={setSidebarWidth}
+        <TitleBar
+          leftPanelOpen={leftPanelOpen}
+          onToggleLeftPanel={toggleLeftPanel}
+          bottomPanelOpen={outputPanelOpen}
+          onToggleBottomPanel={() => setOutputPanelOpen(prev => !prev)}
+          rightSidebarVisible={rightSidebarVisible}
+          onToggleRightSidebar={toggleRightSidebar}
         />
 
-        <Box ref={mainAreaRef} className="flex flex-col flex-1 overflow-hidden">
-          <MainArea
-            tabState={tabState}
-            splitRatio={splitRatio}
-            onSplitResize={setSplitRatio}
-            onActivateTab={activateTab}
-            onCloseTab={closeTab}
-            onToggleSplit={toggleSplit}
-            onSlotClick={(slotIndex) => setTabState(prev => ({ ...prev, activeSlot: slotIndex }))}
-            containerWidth={mainAreaWidth}
-            toolCache={toolCache}
-            tools={tools}
-            runCount={runCount}
+        <Box className="flex flex-1 overflow-hidden">
+
+          <FunctionBar
+            activeFunction={activeFunction}
+            leftPanelOpen={leftPanelOpen}
+            onSelectFunction={handleSelectFunction}
             trashCount={trashCount}
             activeEnvironment={activeEnvironment}
-            onEdit={handleEdit}
-            onVersions={handleVersions}
-            onRun={handleRun}
-            onToolDeleted={() => handleToolDeleted(selectedToolId ?? undefined)}
-            onViewVersion={handleViewVersion}
-            onExport={handleExport}
-            onActiveEnvironmentChanged={refreshActiveEnvironment}
-            onImport={handleImport}
-            onRestored={handleRestored}
-            onTrashCleared={handleTrashCleared}
+            themeMode={mode}
+            onToggleTheme={toggleMode}
           />
 
-          {outputPanelOpen && (
-            <OutputPanel
+          <SidePanel
+            activeFunction={activeFunction}
+            open={leftPanelOpen}
+            width={sidebarWidth}
+            onResizeWidth={setSidebarWidth}
+            tools={tools}
+            selectedToolId={selectedToolId}
+            onSelectTool={handleSelectTool}
+            onNewTool={handleNewTool}
+            onImport={handleImport}
+            runCount={runCount}
+            onSelectHistoryEntry={(id) => openTab({
+              id: `history-detail-${id}`,
+              kind: 'history-detail',
+              title: 'Run Details',
+              entryId: id,
+            })}
+            trashCount={trashCount}
+            onRestored={handleRestored}
+            onTrashCleared={handleTrashCleared}
+            onSelectTrashTool={(toolId, toolName) => openTab({
+              id: `trash-detail-${toolId}`,
+              kind: 'trash-detail',
+              title: toolName,
+              toolId,
+            })}
+            onExport={handleExport}
+            envRefreshSignal={envRefreshSignal}
+            onNewEnvironment={() => openTab({
+              id: 'env-edit-new',
+              kind: 'environment-edit',
+              title: 'New Environment',
+            })}
+            onEditEnvironment={(id) => openTab({
+              id: `env-edit-${id}`,
+              kind: 'environment-edit',
+              title: 'Edit Environment',
+              environmentId: id,
+            })}
+            onActiveEnvironmentChanged={refreshActiveEnvironment}
+          />
+
+          <Box ref={mainAreaRef} className="flex flex-col flex-1 overflow-hidden">
+            <MainArea
+              tabState={tabState}
+              splitRatio={splitRatio}
+              onSplitResize={setSplitRatio}
+              onActivateTab={activateTab}
+              onCloseTab={closeTab}
+              onReorderTabs={reorderTabs}
+              onToggleSplit={toggleSplit}
+              onSlotClick={(slotIndex) => setTabState(prev => ({ ...prev, activeSlot: slotIndex }))}
+              containerWidth={mainAreaWidth}
+              toolCache={toolCache}
+              tools={tools}
+              runCount={runCount}
+              activeEnvironment={activeEnvironment}
+              onSaved={handleToolSaved}
+              onRun={handleRun}
+              onToolDeleted={() => handleToolDeleted(selectedToolId ?? undefined)}
+              onViewVersion={handleViewVersion}
+              onRestored={handleRestored}
+              onEnvironmentSaved={() => { refreshActiveEnvironment(); setEnvRefreshSignal(c => c + 1) }}
+              onHistoryVersionFound={handleHistoryVersionFound}
+            />
+
+            {outputPanelOpen && (
+              <OutputPanel
+                tool={selectedTool}
+                lines={outputLines}
+                result={runResult}
+                height={outputPanelHeight}
+                onResize={setOutputPanelHeight}
+                onClose={() => setOutputPanelOpen(false)}
+              />
+            )}
+          </Box>
+
+          {rightSidebarVisible && (
+            <RightSidebar
+              content={rightSidebar}
+              width={rightSidebarWidth}
+              onResize={setRightSidebarWidth}
               tool={selectedTool}
-              lines={outputLines}
-              result={runResult}
-              height={outputPanelHeight}
-              onResize={setOutputPanelHeight}
-              onClose={() => setOutputPanelOpen(false)}
+              saveCount={saveCount}
+              onRestored={(id) => handleRestored(id)}
+              onRunStart={handleRunStart}
+              onViewVersion={handleViewVersion}
+              onClose={() => setRightSidebar(null)}
             />
           )}
-        </Box>
 
-        <RightSidebar
-          content={rightSidebar}
-          width={rightSidebarWidth}
-          onResize={setRightSidebarWidth}
-          tool={selectedTool}
-          onSaved={handleToolSaved}
-          saveCount={saveCount}
-          onRestored={(id) => handleRestored(id)}
-          onRunStart={handleRunStart}
-          onClose={() => setRightSidebar(null)}
-        />
+        </Box>
 
       </Box>
 

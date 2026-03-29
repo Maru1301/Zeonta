@@ -20,10 +20,11 @@ Zeonta is a desktop application for users who frequently work with shell scripts
 ## 💡 Using Zeonta
 
 ### Creating a Tool
-1. Click **+ New Tool** in the sidebar.
-2. Fill in the tool name, select the type (Shell or Go), and write the script body.
-3. Optionally add **Parameters**.
-4. Click **Save** — the tool appears in the sidebar immediately.
+1. Click the **Tools** icon in the left function bar to open the tool list.
+2. Click **+ New Tool** — a new tab opens in the main area with a blank form.
+3. Fill in the tool name, select the type (Shell or Go), and write the script body.
+4. Optionally add **Parameters**.
+5. Click **Save** — the tool tab opens automatically and the tool list refreshes.
 
 ### Variable Substitution
 Use `{{KEY}}` syntax to reference environment variables, and `[[PARAM]]` syntax to reference parameters:
@@ -49,15 +50,15 @@ Instead of per-tool environment variables, Zeonta uses **global environment sets
 > Run-time edits to parameter values are **not** saved back to the tool. To change defaults, use the **Edit** action.
 
 ### Viewing Tool Versions
-Click the clock icon on any tool to open the **Versions panel**. It lists every saved snapshot of the tool, newest first. From the panel you can:
+The **Versions panel** opens automatically in the right sidebar whenever a tool tab is active. It lists every saved snapshot of the tool, newest first. From the panel you can:
 - Preview the script body at any point in time.
 - **Run this version** — execute an old snapshot directly without changing the live tool.
 - **Restore to current** — update the live tool to match that snapshot.
 
-Each run in the History panel also links back to the exact version that was executed.
+Each run in the History panel also links back to the exact version that was executed — clicking a history entry automatically pre-selects that version in the right sidebar.
 
 ### Using Trash
-Deleted tools are not permanently removed — they move to the **Trash**. A badge on the Trash button in the sidebar shows how many deleted tools are waiting. From the Trash panel you can:
+Deleted tools are not permanently removed — they move to the **Trash**. A badge on the Trash icon in the function bar shows how many deleted tools are waiting. From the Trash panel you can:
 - Restore individual tools (from any saved version) or bulk-restore multiple tools at once.
 - Permanently delete tools when you are sure you no longer need them.
 

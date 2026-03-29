@@ -6,9 +6,10 @@ interface Props {
   currentSize: number
   min?: number
   max?: number
+  inverted?: boolean  // for right/top-anchored panels: drag toward center to grow
 }
 
-export default function ResizeHandle({ direction, onResize, currentSize, min = 48, max = 1200 }: Props) {
+export default function ResizeHandle({ direction, onResize, currentSize, min = 48, max = 1200, inverted = false }: Props) {
   const isHorizontal = direction === 'horizontal'
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -17,9 +18,10 @@ export default function ResizeHandle({ direction, onResize, currentSize, min = 4
     const startSize = currentSize
 
     const onMove = (me: MouseEvent) => {
-      const delta = isHorizontal
+      const raw = isHorizontal
         ? me.clientX - startPos
         : startPos - me.clientY  // dragging up increases height
+      const delta = inverted ? -raw : raw
       const next = Math.max(min, Math.min(max, startSize + delta))
       onResize(next)
     }

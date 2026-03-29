@@ -30,7 +30,7 @@ export default function ExportPanel({ tools, onExport, onClose }: Props) {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 720 }}>
+    <Box sx={{ p: 3 }}>
       {/* Header */}
       <Box className="flex items-center justify-between gap-2" sx={{ mb: 2 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>Export Tools</Typography>
@@ -38,7 +38,6 @@ export default function ExportPanel({ tools, onExport, onClose }: Props) {
           <Button size="small" onClick={toggleAll} sx={{ color: 'text.secondary' }}>
             {allSelected ? 'Deselect All' : 'Select All'}
           </Button>
-          <Button size="small" onClick={onClose} sx={{ color: 'text.secondary' }}>Cancel</Button>
           <Button
             size="small"
             variant="contained"

@@ -1,8 +1,6 @@
 import { Box } from '@mui/material'
 import type { RightSidebarContent } from '../../types/tabs'
 import type { Tool } from '../../types/tool'
-import type { EditPanelMode } from '../../App'
-import EditPanel from '../EditPanel/EditPanel'
 import VersionPanel from '../Versions/VersionPanel'
 import ResizeHandle from './ResizeHandle'
 
@@ -10,30 +8,21 @@ interface Props {
   content: RightSidebarContent
   width: number
   onResize: (w: number) => void
-  // EditPanel props
   tool: Tool | null
-  onSaved: (id: string) => void
-  // VersionPanel props
   saveCount: number
   onRestored: (toolId: string) => void
   onRunStart: () => void
-  // shared
+  onViewVersion: (toolId: string, versionId: string) => void
   onClose: () => void
 }
 
 export default function RightSidebar({
   content, width, onResize,
-  tool, onSaved,
-  saveCount, onRestored, onRunStart,
-  onClose,
+  tool, saveCount, onRestored, onRunStart, onViewVersion, onClose,
 }: Props) {
-  if (!content) return null
-
-  const editMode: EditPanelMode = content.kind === 'edit' ? content.mode : null
-
   return (
     <Box sx={{ display: 'flex', flexShrink: 0 }}>
-      <ResizeHandle direction="horizontal" currentSize={width} onResize={onResize} min={300} max={800} />
+      <ResizeHandle direction="horizontal" currentSize={width} onResize={onResize} min={300} max={800} inverted />
       <Box
         sx={{
           width,
@@ -45,15 +34,7 @@ export default function RightSidebar({
           overflow: 'hidden',
         }}
       >
-        {content.kind === 'edit' && (
-          <EditPanel
-            mode={editMode}
-            tool={tool}
-            onSaved={onSaved}
-            onClose={onClose}
-          />
-        )}
-        {content.kind === 'versions' && (
+        {content?.kind === 'versions' && (
           <VersionPanel
             toolId={content.toolId}
             liveTool={tool}

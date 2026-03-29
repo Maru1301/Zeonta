@@ -74,18 +74,7 @@ export default function VersionPanel({ toolId, liveTool, saveCount, initialVersi
   const isCurrentVersion = selected !== null && selected.id === currentVersionId
 
   return (
-    <Box
-      sx={{
-        width: 560,
-        flexShrink: 0,
-        bgcolor: 'background.paper',
-        borderLeft: '1px solid',
-        borderColor: 'divider',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Header */}
       <Box className="flex items-center justify-between" sx={{ px: 3, py: 2 }}>
         <Box className="flex items-center gap-2">

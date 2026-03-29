@@ -1,10 +1,14 @@
-export type TabKind = 'tool' | 'history' | 'trash' | 'export' | 'environment'
+export type TabKind = 'tool' | 'new-tool' | 'history-detail' | 'trash-detail' | 'environment-edit'
+
+export type ActiveFunction = 'tools' | 'history' | 'trash' | 'export' | 'environments'
 
 export interface AppTab {
-  id: string       // toolId for 'tool' tabs; kind string for singletons
+  id: string
   kind: TabKind
   title: string
-  toolId?: string  // only present when kind === 'tool'
+  toolId?: string          // 'tool' and 'trash-detail'
+  entryId?: string         // 'history-detail'
+  environmentId?: string   // 'environment-edit'
 }
 
 export interface SlotState {
@@ -19,7 +23,6 @@ export interface TabState {
 }
 
 export type RightSidebarContent =
-  | { kind: 'edit'; mode: 'create' | 'edit' }
   | { kind: 'versions'; toolId: string; initialVersionId?: string }
   | null
 

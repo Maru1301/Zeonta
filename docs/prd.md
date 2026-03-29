@@ -148,13 +148,13 @@ As a user, I can view the full history of changes to a tool and restore any prev
 
 **Acceptance criteria:**
 - ✅ Every save (create or update) automatically records a full snapshot of the tool (body, name, type, desc, params)
-- ✅ A "Versions" button on the Tool Detail view opens the Version Panel
+- ✅ The Version Panel is shown in the right sidebar; it opens automatically when a tool tab becomes active and closes when a non-tool tab is active
 - ✅ The Version Panel lists all snapshots newest-first; the version matching the live tool's current content is tagged "current"
 - ✅ Clicking a version shows its script body, save date, and type
 - ✅ Any version can be run directly ("Run this version") without modifying the live tool
 - ✅ Any non-current version can be restored ("Restore to current"), updating the live tool without recording a new snapshot
 - ✅ The Version Panel refreshes automatically when a new version is saved
-- ✅ Each history entry links to the exact version that was run; clicking "View version" in History opens the Version Panel pre-selected to that snapshot
+- ✅ Each history entry links to the exact version that was run; opening a history-detail tab automatically pre-selects that version in the right sidebar
 
 ---
 
