@@ -1,4 +1,4 @@
-# Architecture — Zeonta v1
+# Architecture — Zeonta 0.5.0
 
 Defines the system structure, layer boundaries, storage design, and data flow.
 Read alongside [ux.md](ux.md) (UI/UX) and [api.md](api.md) (method contracts).
@@ -32,7 +32,7 @@ Read alongside [ux.md](ux.md) (UI/UX) and [api.md](api.md) (method contracts).
 
 ```
 zeonta/
-├── main.go                  # Wails entry point — initializes app and store
+├── main.go                  # Wails entry point — initializes app and store; Frameless: true for custom title bar
 ├── app.go                   # All Go methods exposed to the frontend via Wails
 ├── internal/
 │   ├── store/
@@ -48,28 +48,46 @@ zeonta/
 ├── frontend/
 │   └── src/
 │       ├── components/
-│       │   ├── Sidebar/
-│       │   │   ├── Sidebar.tsx
-│       │   │   ├── ToolList.tsx
-│       │   │   └── ToolListItem.tsx
 │       │   ├── ContentArea/
 │       │   │   ├── ContentArea.tsx
 │       │   │   ├── EmptyState.tsx
 │       │   │   └── ToolDetail.tsx
 │       │   ├── EditPanel/
-│       │   │   ├── EditPanel.tsx
+│       │   │   ├── CreatePanel.tsx       # New-tool form (opens as a tab)
 │       │   │   └── ParamEditor.tsx
 │       │   ├── Environments/
-│       │   │   └── EnvironmentPanel.tsx
+│       │   │   ├── EnvironmentPanel.tsx
+│       │   │   └── EnvironmentEditPanel.tsx  # Edit/create environment (opens as a tab)
 │       │   ├── Exports/
 │       │   │   └── ExportPanel.tsx
 │       │   ├── History/
 │       │   │   └── HistoryPanel.tsx
+│       │   ├── Layout/
+│       │   │   ├── TitleBar.tsx          # Custom frameless title bar
+│       │   │   ├── FunctionBar.tsx       # 48px icon rail (function switcher)
+│       │   │   ├── SidePanel.tsx         # Collapsible content panel (renders active function)
+│       │   │   ├── MainArea.tsx          # Tab slots container (1 or 2 slots)
+│       │   │   ├── TabBar.tsx            # Tab strip for a single slot
+│       │   │   ├── TabContent.tsx        # Renders the correct panel for a tab's kind
+│       │   │   ├── TabSlot.tsx           # (stub)
+│       │   │   ├── RightSidebar.tsx      # Version Panel wrapper (auto-syncs with active tab)
+│       │   │   ├── ResizeHandle.tsx      # Draggable resize divider
+│       │   │   ├── HistoryDetailPanel.tsx  # History entry detail (opens as a tab)
+│       │   │   └── TrashDetailPanel.tsx    # Deleted tool detail (opens as a tab)
+│       │   ├── Sidebar/
+│       │   │   ├── ToolList.tsx
+│       │   │   └── ToolListItem.tsx
+│       │   ├── Versions/
+│       │   │   ├── VersionPanel.tsx
+│       │   │   └── TrashPanel.tsx
 │       │   └── OutputPanel/
 │       │       └── OutputPanel.tsx
+│       ├── hooks/
+│       │   └── useResizable.ts  # localStorage-backed resizable size state
 │       ├── types/
-│       │   └── tool.ts      # TypeScript types mirroring Go structs in api.md
-│       └── App.tsx          # Root layout: Sidebar + ContentArea + EditPanel + OutputPanel
+│       │   ├── tool.ts          # TypeScript types mirroring Go structs in api.md
+│       │   └── tabs.ts          # TabKind, AppTab, SlotState, TabState, RightSidebarContent, ActiveFunction
+│       └── App.tsx              # Root layout: TitleBar + FunctionBar + SidePanel + MainArea + RightSidebar + OutputPanel
 ├── wailsjs/                 # Auto-generated — do not edit
 └── docs/                    # SDD specification documents
 ```
@@ -179,35 +197,82 @@ CREATE TABLE IF NOT EXISTS tool_versions (
 
 See [ux.md](ux.md) for the full component map, layout, and user flows.
 
+### Tab System (`types/tabs.ts`)
+
+```ts
+type TabKind = 'tool' | 'new-tool' | 'history-detail' | 'trash-detail' | 'environment-edit'
+type ActiveFunction = 'tools' | 'history' | 'trash' | 'export' | 'environments'
+
+interface AppTab {
+  id: string        // toolId for 'tool' tabs; unique string for others
+  kind: TabKind
+  title: string
+  toolId?: string         // only for kind === 'tool'
+  entryId?: string        // only for kind === 'history-detail'
+  environmentId?: string  // only for kind === 'environment-edit'; undefined = new environment
+}
+
+interface SlotState {
+  tabs: AppTab[]
+  activeTabIndex: number
+}
+
+interface TabState {
+  slots: [SlotState, SlotState]
+  activeSlot: 0 | 1
+  splitEnabled: boolean
+}
+
+type RightSidebarContent =
+  | { kind: 'versions'; toolId: string; initialVersionId?: string }
+  | null
+```
+
 ### State Shape (app-level, managed in `App.tsx`)
 
 ```ts
-type AppState = {
-  tools: ToolSummary[]                          // sidebar list
-  selectedToolId: string | null
-  selectedTool: Tool | null                     // full detail of selected tool
-  editPanelMode: 'create' | 'edit' | null
-  outputPanelOpen: boolean
-  outputLines: string[]                         // streamed via tool:output events
-  runResult: RunResult | null                   // set on tool:done event
-  runCount: number                              // increments on each tool:done; triggers history refresh
-  saveCount: number                             // increments on each tool save; triggers version panel refresh
-  environmentPanelOpen: boolean
-  activeEnvironment: EnvironmentSummary | null
-  exportPanelOpen: boolean
-  historyPanelOpen: boolean
-  versionPanelToolId: string | null             // null = closed; set to tool ID to open
-  versionPanelInitialId: string | undefined     // pre-selects a version when panel opens
-  trashPanelOpen: boolean
-  trashCount: number                            // count of deleted tools; drives sidebar badge
-}
+// Data
+tools: ToolSummary[]
+activeEnvironment: EnvironmentSummary | null
+trashCount: number
+
+// Tool cache (replaces selectedTool state — each tab looks up its full Tool here)
+toolCache: Record<string, Tool>
+
+// Tab system
+tabState: TabState
+saveCount: number  // increments on each tool save; triggers version panel refresh
+
+// Right sidebar
+rightSidebar: RightSidebarContent  // auto-set when active tab changes
+
+// Output panel
+outputPanelOpen: boolean
+outputLines: string[]  // streamed via tool:output events
+runResult: RunResult | null
+runCount: number       // increments on each tool:done; triggers history refresh
+
+// Layout
+activeFunction: ActiveFunction
+leftPanelOpen: boolean    // persists in localStorage
+rightSidebarVisible: boolean
+sidebarWidth: number      // persists in localStorage
+rightSidebarWidth: number // persists in localStorage
+outputPanelHeight: number // persists in localStorage
+splitRatio: number        // persists in localStorage (% of main area for slot 0)
 ```
+
+**Key behaviors:**
+- `toolCache` is populated lazily when a tool tab is opened; all tool tabs read from this shared cache
+- `rightSidebar` is set automatically by a `useEffect` watching `tabState`: tool tab → set versions for that toolId; history-detail tab → restore version from `historyVersionCache` ref if available; other tab → null
+- `historyVersionCache` is a `useRef` (not state) so it doesn't cause re-renders; populated by `onHistoryVersionFound` callback called from `HistoryDetailPanel` when it loads an entry with a versionId
 
 ### Frontend Rules
 - No state management library — `useState` / `useReducer` at `App.tsx` level only
 - Components must not exceed ~150 lines — split if needed
 - No `fetch` or `XMLHttpRequest` — all data comes from Wails bindings in `wailsjs/`
-- Panel open/close state lives at the `App` level, passed as props
+- All tab state, panel open/close state, and layout sizes live at the `App` level, passed as props
+- All tabs are rendered simultaneously in the DOM with `key={tab.id}`; inactive tabs use `display:none` — this preserves React component state across tab switches and cross-slot drags
 
 ---
 

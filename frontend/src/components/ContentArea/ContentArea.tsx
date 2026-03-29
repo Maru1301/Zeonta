@@ -5,17 +5,16 @@ import ToolDetail from './ToolDetail'
 
 interface Props {
   tool: Tool | null
-  onEdit: () => void
+  onSaved: (id: string) => void
   onRun: (paramValues: Record<string, string>) => void
   onDeleted: () => void
-  onVersions: () => void
 }
 
-export default function ContentArea({ tool, onEdit, onRun, onDeleted, onVersions }: Props) {
+export default function ContentArea({ tool, onSaved, onRun, onDeleted }: Props) {
   return (
     <Box sx={{ height: '100%' }}>
       {tool ? (
-        <ToolDetail tool={tool} onEdit={onEdit} onRun={onRun} onDeleted={onDeleted} onVersions={onVersions} />
+        <ToolDetail tool={tool} onSaved={onSaved} onRun={onRun} onDeleted={onDeleted} />
       ) : (
         <EmptyState />
       )}
