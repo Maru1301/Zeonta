@@ -11,7 +11,7 @@ import type { HistorySummary, ToolSummary } from '../../types/tool'
 interface Props {
   tools: ToolSummary[]
   runCount: number
-  onSelectEntry: (id: string) => void
+  onSelectEntry: (id: string, toolName: string) => void
 }
 
 function formatDate(unixSec: number): string {
@@ -74,7 +74,7 @@ export default function HistoryPanel({ tools, runCount, onSelectEntry }: Props) 
           summaries.map(h => (
             <Box
               key={h.id}
-              onClick={() => onSelectEntry(h.id)}
+              onClick={() => onSelectEntry(h.id, h.toolName)}
               className="flex items-center gap-2"
               sx={{
                 px: 3, py: 1.5,

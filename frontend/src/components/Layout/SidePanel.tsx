@@ -23,7 +23,7 @@ interface Props {
   onImport: () => void
   // History
   runCount: number
-  onSelectHistoryEntry: (id: string) => void
+  onSelectHistoryEntry: (id: string, toolName: string) => void
   // Trash
   trashCount: number
   onRestored: (toolId: string) => void

@@ -237,7 +237,7 @@ export default function App() {
     const activeTab = slot.tabs[slot.activeTabIndex] ?? null
     if (activeTab?.kind === 'tool' && activeTab.toolId) {
       setRightSidebar(prev =>
-        prev?.kind === 'versions' && prev.toolId === activeTab.toolId ? prev
+        prev?.kind === 'versions' && prev.toolId === activeTab.toolId && prev.initialVersionId === undefined ? prev
           : { kind: 'versions', toolId: activeTab.toolId! }
       )
     } else if (activeTab?.kind === 'history-detail' && activeTab.entryId) {
@@ -347,7 +347,7 @@ export default function App() {
   )
   const [rightSidebarVisible, setRightSidebarVisible] = useState(true)
   const [sidebarWidth, setSidebarWidth] = useResizable('zeonta-sidebar-width', 240)
-  const [rightSidebarWidth, setRightSidebarWidth] = useResizable('zeonta-right-sidebar-width', 500)
+  const [rightSidebarWidth, setRightSidebarWidth] = useResizable('zeonta-right-sidebar-width', 400)
   const [outputPanelHeight, setOutputPanelHeight] = useResizable('zeonta-output-height', 220)
   const [splitRatio, setSplitRatio] = useResizable('zeonta-split-ratio', 50)
 
@@ -465,10 +465,10 @@ export default function App() {
             onNewTool={handleNewTool}
             onImport={handleImport}
             runCount={runCount}
-            onSelectHistoryEntry={(id) => openTab({
+            onSelectHistoryEntry={(id, toolName) => openTab({
               id: `history-detail-${id}`,
               kind: 'history-detail',
-              title: 'Run Details',
+              title: toolName,
               entryId: id,
             })}
             trashCount={trashCount}
