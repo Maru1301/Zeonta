@@ -31,6 +31,7 @@ export default function VersionPanel({ toolId, liveTool, saveCount, initialVersi
   const [selected, setSelected] = useState<ToolVersion | null>(null)
 
   useEffect(() => {
+    setSelected(null)
     ListToolVersions(toolId).then(async list => {
       const s = list ?? []
       setSummaries(s)
@@ -41,7 +42,7 @@ export default function VersionPanel({ toolId, liveTool, saveCount, initialVersi
         setSelected(resolved.find(v => v.id === initialVersionId) ?? null)
       }
     })
-  }, [toolId, saveCount])
+  }, [toolId, saveCount, initialVersionId])
 
   const handleSelect = async (id: string) => {
     try {
