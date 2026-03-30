@@ -8,19 +8,20 @@ interface Props {
   tool: Tool | null
   lines: string[]
   result: RunResult | null
+  running: boolean
   height: number
   onResize: (h: number) => void
   onClose: () => void
 }
 
-export default function OutputPanel({ tool, lines, result, height, onResize, onClose }: Props) {
+export default function OutputPanel({ tool, lines, result, running, height, onResize, onClose }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [lines])
 
-  const running = result === null
+  const waiting = !running && lines.length === 0 && result === null
   const exitCode = result?.exitCode ?? null
 
   return (
@@ -42,6 +43,9 @@ export default function OutputPanel({ tool, lines, result, height, onResize, onC
             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
               {tool?.name ?? 'Output'}
             </Typography>
+            {waiting && (
+              <Chip label="waiting" size="small" sx={{ bgcolor: 'rgba(148,163,184,0.15)', color: '#94a3b8' }} />
+            )}
             {running && (
               <Chip label="running" size="small" sx={{ bgcolor: 'rgba(251,191,36,0.15)', color: '#fbbf24' }} />
             )}
@@ -76,6 +80,9 @@ export default function OutputPanel({ tool, lines, result, height, onResize, onC
             lineHeight: 1.6,
           }}
         >
+          {waiting && (
+            <Box sx={{ color: '#555', fontStyle: 'italic' }}>Waiting for run...</Box>
+          )}
           {lines.map((line, i) => (
             <Box key={i} component="div">{line || '\u00A0'}</Box>
           ))}

@@ -307,6 +307,7 @@ export default function App() {
   const [outputLines, setOutputLines] = useState<string[]>([])
   const [runResult, setRunResult] = useState<RunResult | null>(null)
   const [runCount, setRunCount] = useState(0)
+  const [isRunning, setIsRunning] = useState(false)
 
   useEffect(() => {
     let offOutput: (() => void) | undefined
@@ -320,6 +321,7 @@ export default function App() {
         offDone = EventsOn('tool:done', (result: RunResult) => {
           setRunResult(result)
           setRunCount(c => c + 1)
+          setIsRunning(false)
         })
       } catch {
         retryTimer = setTimeout(register, 100)
@@ -332,6 +334,7 @@ export default function App() {
   const handleRunStart = useCallback(() => {
     setOutputLines([])
     setRunResult(null)
+    setIsRunning(true)
     setOutputPanelOpen(true)
   }, [])
 
@@ -525,9 +528,10 @@ export default function App() {
                 tool={selectedTool}
                 lines={outputLines}
                 result={runResult}
+                running={isRunning}
                 height={outputPanelHeight}
                 onResize={setOutputPanelHeight}
-                onClose={() => setOutputPanelOpen(false)}
+                onClose={() => { setOutputPanelOpen(false); setOutputLines([]); setRunResult(null); setIsRunning(false) }}
               />
             )}
           </Box>
