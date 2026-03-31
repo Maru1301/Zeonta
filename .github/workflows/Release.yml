@@ -39,6 +39,90 @@ jobs:
             echo "SKIP=false" >> $env:GITHUB_OUTPUT
           }
 
+      # Generate changelog from conventional commits since last tag
+      - name: Generate Changelog
+        if: steps.tag_check.outputs.SKIP == 'false'
+        id: changelog
+        shell: pwsh
+        run: |
+          # Get the last tag, or use initial commit if no tags exist
+          $lastTag = git describe --tags --abbrev=0 2>$null
+          if ($lastTag) {
+            $commits = git log "$lastTag..HEAD" --pretty=format:"%s" --no-merges
+          } else {
+            $commits = git log --pretty=format:"%s" --no-merges
+          }
+
+          $features = @()
+          $fixes = @()
+          $chores = @()
+          $docs = @()
+          $refactors = @()
+          $others = @()
+
+          foreach ($line in $commits) {
+            if ($line -match "^feat(\(.+?\))?:\s*(.+)") {
+              $features += $matches[2]
+            } elseif ($line -match "^fix(\(.+?\))?:\s*(.+)") {
+              $fixes += $matches[2]
+            } elseif ($line -match "^chore(\(.+?\))?:\s*(.+)") {
+              $chores += $matches[2]
+            } elseif ($line -match "^docs(\(.+?\))?:\s*(.+)") {
+              $docs += $matches[2]
+            } elseif ($line -match "^refactor(\(.+?\))?:\s*(.+)") {
+              $refactors += $matches[2]
+            } elseif ($line -notmatch "^Merge ") {
+              $others += $line
+            }
+          }
+
+          $body = ""
+
+          if ($features.Count -gt 0) {
+            $body += "## Features`n`n"
+            foreach ($f in $features) { $body += "- $f`n" }
+            $body += "`n"
+          }
+
+          if ($fixes.Count -gt 0) {
+            $body += "## Bug Fixes`n`n"
+            foreach ($f in $fixes) { $body += "- $f`n" }
+            $body += "`n"
+          }
+
+          if ($refactors.Count -gt 0) {
+            $body += "## Refactors`n`n"
+            foreach ($f in $refactors) { $body += "- $f`n" }
+            $body += "`n"
+          }
+
+          if ($docs.Count -gt 0) {
+            $body += "## Documentation`n`n"
+            foreach ($f in $docs) { $body += "- $f`n" }
+            $body += "`n"
+          }
+
+          if ($chores.Count -gt 0) {
+            $body += "## Chores`n`n"
+            foreach ($f in $chores) { $body += "- $f`n" }
+            $body += "`n"
+          }
+
+          if ($others.Count -gt 0) {
+            $body += "## Other Changes`n`n"
+            foreach ($f in $others) { $body += "- $f`n" }
+            $body += "`n"
+          }
+
+          if ($body -eq "") {
+            $body = "No notable changes."
+          }
+
+          # Write to file to avoid escaping issues
+          $body | Out-File -FilePath "RELEASE_NOTES.md" -Encoding utf8
+          echo "Generated release notes:"
+          echo $body
+
       # Setup Go
       - name: Setup Go
         if: steps.tag_check.outputs.SKIP == 'false'
@@ -75,13 +159,13 @@ jobs:
           git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
           git push origin "v${{ steps.version.outputs.VERSION }}"
 
-      # Create GitHub Release with the .exe attached
+      # Create GitHub Release with categorized notes
       - name: Create Release
         if: steps.tag_check.outputs.SKIP == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v${{ steps.version.outputs.VERSION }}"
           name: "Zeonta v${{ steps.version.outputs.VERSION }}"
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
           files: |
             build/bin/*.exe
