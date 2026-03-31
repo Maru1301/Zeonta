@@ -10,6 +10,7 @@ import type { Tool, ToolSummary, RunResult, EnvironmentSummary } from './types/t
 import type { TabState, AppTab, RightSidebarContent, ActiveFunction } from './types/tabs'
 import { initialTabState, getActiveTab, getSlotActiveTab } from './types/tabs'
 import { useResizable } from './hooks/useResizable'
+import { useNavHistory, findTab } from './hooks/useNavHistory'
 import TitleBar from './components/Layout/TitleBar'
 import FunctionBar from './components/Layout/FunctionBar'
 import SidePanel from './components/Layout/SidePanel'
@@ -88,6 +89,13 @@ export default function App() {
   const [tabState, setTabState] = useState<TabState>(initialTabState)
   const [saveCount, setSaveCount] = useState(0)
 
+  // ── Navigation history (Go Back / Go Forward) ────────────
+  const { pushNav, goBack, goForward, canGoBack, canGoForward } = useNavHistory()
+  // Tracks the last pushed "slotIndex:tabId" key to skip duplicates
+  const prevNavKeyRef = useRef<string | null>(null)
+  // Set true before programmatic back/forward to suppress the resulting push
+  const skipNavPushRef = useRef(false)
+
   const openTab = useCallback((tab: AppTab) => {
     setTabState(prev => {
       const targetSlot = prev.activeSlot
@@ -127,6 +135,48 @@ export default function App() {
       return prev
     })
   }, [])
+
+  // Watch tabState for active-tab changes and push to nav history.
+  // This covers openTab, activateTab, and all other paths.
+  useEffect(() => {
+    const slot = tabState.slots[tabState.activeSlot]
+    const activeTab = slot.tabs[slot.activeTabIndex] ?? null
+    if (!activeTab) return
+    const key = `${tabState.activeSlot}:${activeTab.id}`
+    if (key === prevNavKeyRef.current) return
+    prevNavKeyRef.current = key
+    if (!skipNavPushRef.current) {
+      pushNav({ slotIndex: tabState.activeSlot, tabId: activeTab.id })
+    }
+    skipNavPushRef.current = false
+  }, [tabState, pushNav])
+
+  const handleGoBack = useCallback(() => {
+    const entry = goBack(tabState)
+    if (!entry) return
+    const location = findTab(tabState, entry)
+    if (!location) return
+    skipNavPushRef.current = true
+    activateTab(location.slotIndex, location.tabIndex)
+  }, [tabState, goBack, activateTab])
+
+  const handleGoForward = useCallback(() => {
+    const entry = goForward(tabState)
+    if (!entry) return
+    const location = findTab(tabState, entry)
+    if (!location) return
+    skipNavPushRef.current = true
+    activateTab(location.slotIndex, location.tabIndex)
+  }, [tabState, goForward, activateTab])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'ArrowLeft')  { e.preventDefault(); handleGoBack() }
+      if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); handleGoForward() }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [handleGoBack, handleGoForward])
 
   const closeTab = useCallback((slotIndex: 0 | 1, tabIndex: number) => {
     setTabState(prev => {
@@ -443,6 +493,10 @@ export default function App() {
           onToggleBottomPanel={() => setOutputPanelOpen(prev => !prev)}
           rightSidebarVisible={rightSidebarVisible}
           onToggleRightSidebar={toggleRightSidebar}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
+          onGoBack={handleGoBack}
+          onGoForward={handleGoForward}
         />
 
         <Box className="flex flex-1 overflow-hidden">
