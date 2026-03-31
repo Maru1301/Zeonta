@@ -1,4 +1,4 @@
-# Architecture — Zeonta 0.5.0
+# Architecture — Zeonta 0.6.0
 
 Defines the system structure, layer boundaries, storage design, and data flow.
 Read alongside [ux.md](ux.md) (UI/UX) and [api.md](api.md) (method contracts).
@@ -83,7 +83,8 @@ zeonta/
 │       │   └── OutputPanel/
 │       │       └── OutputPanel.tsx
 │       ├── hooks/
-│       │   └── useResizable.ts  # localStorage-backed resizable size state
+│       │   ├── useResizable.ts   # localStorage-backed resizable size state
+│       │   └── useNavHistory.ts  # tab navigation history stack (Go Back / Go Forward)
 │       ├── types/
 │       │   ├── tool.ts          # TypeScript types mirroring Go structs in api.md
 │       │   └── tabs.ts          # TabKind, AppTab, SlotState, TabState, RightSidebarContent, ActiveFunction
@@ -243,6 +244,12 @@ toolCache: Record<string, Tool>
 tabState: TabState
 saveCount: number  // increments on each tool save; triggers version panel refresh
 
+// Navigation history (managed by useNavHistory hook)
+// stack: NavEntry[]  — {slotIndex, tabId} entries, capped at 100
+// cursor: number     — current position in the stack
+// canGoBack: boolean — cursor > 0
+// canGoForward: boolean — cursor < stack.length - 1
+
 // Right sidebar
 rightSidebar: RightSidebarContent  // auto-set when active tab changes
 
@@ -266,6 +273,7 @@ splitRatio: number        // persists in localStorage (% of main area for slot 0
 - `toolCache` is populated lazily when a tool tab is opened; all tool tabs read from this shared cache
 - `rightSidebar` is set automatically by a `useEffect` watching `tabState`: tool tab → set versions for that toolId; history-detail tab → restore version from `historyVersionCache` ref if available; other tab → null
 - `historyVersionCache` is a `useRef` (not state) so it doesn't cause re-renders; populated by `onHistoryVersionFound` callback called from `HistoryDetailPanel` when it loads an entry with a versionId
+- Navigation history is managed by `useNavHistory` hook; records every active-tab change via a `useEffect` watching `tabState`; `skipNavPushRef` (a `useRef`) suppresses pushes during programmatic back/forward navigation
 
 ### Frontend Rules
 - No state management library — `useState` / `useReducer` at `App.tsx` level only
