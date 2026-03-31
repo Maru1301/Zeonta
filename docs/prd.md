@@ -175,6 +175,22 @@ As a user, I can recover tools I have deleted — so that accidental deletion do
 
 ---
 
+### F12 — Tab Navigation History
+
+**User story:**
+As a user, I can navigate back and forward through my recently active tabs — so that I can quickly return to what I was looking at without hunting through the sidebar or tab bar.
+
+**Acceptance criteria:**
+- ✅ Back (Alt+Left) and Forward (Alt+Right) keyboard shortcuts navigate through tab history
+- ✅ Back and Forward buttons appear in the title bar, left of the drag region
+- ✅ Buttons are disabled (grayed out) when there is no history to navigate in that direction
+- ✅ History is recorded for every tab activation, regardless of how the tab was activated (click, sidebar, programmatic)
+- ✅ Navigating back then opening a new tab clears the forward stack (same behavior as browsers and VS Code)
+- ✅ If a tab was closed before navigating back to it, that entry is silently skipped
+- ✅ Navigation works across both split slots
+
+---
+
 ## Non-Functional Requirements
 
 | Requirement | Target |

@@ -1,4 +1,4 @@
-# UX Design — Zeonta 0.5.0
+# UX Design — Zeonta 0.6.0
 
 Defines the screen layout, user flows, and visual style for the Zeonta frontend.
 All implementation must follow this document. Code must not introduce layouts or flows not described here.
@@ -32,7 +32,7 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  TITLE BAR  [Logo · ZEONTA]  ←─── drag region ───→  [◧][◫][◨] [─][□][×] │
+│  TITLE BAR  [Logo · ZEONTA] [←][→]  ←── drag region ──→  [◧][◫][◨] [─][□][×] │
 ├────┬──────────────┬──────────────────────────────────┬──────────────────┤
 │    │              │ [Tab1][Tab2][+]   [⊟ Split]       │                  │
 │ F  │   SIDE       ├──────────────────────────────────│   RIGHT          │
@@ -53,12 +53,23 @@ Inspired by **Obsidian**: dark, minimal, content-first.
 
 | Zone | Purpose |
 |---|---|
-| **Title Bar** | Custom frameless title bar: logo + app name (left), window drag region (center), panel toggle buttons + window controls (right) |
+| **Title Bar** | Custom frameless title bar: logo + app name (left), Back/Forward nav buttons (left of drag region), window drag region (center), panel toggle buttons + window controls (right) |
 | **Function Bar** | 48px icon rail on the far left; one button per function (Tools, History, Trash, Export, Environments); theme toggle at bottom; clicking a button opens the Side Panel to that function's content, or toggles it closed if already open |
 | **Side Panel** | Collapsible, resizable (default 240px); renders the selected function's content — tool list with New/Import actions, history list, trash list, export panel, or environment panel; width persists across sessions |
 | **Main Area** | Tab-based content area; supports split into two side-by-side slots; each slot has its own tab bar; splitting is toggled by a button in the active slot's tab bar |
 | **Right Sidebar** | Version Panel only; auto-opens when a tool tab is active; auto-updates when switching tool tabs; closes when a non-tool tab is active; width persists; can be toggled via title bar |
 | **Output Panel** | Slides up from bottom when a tool is run; shows stdout/stderr with exit code; height persists; can be toggled via title bar |
+
+### Title Bar Navigation Buttons
+
+Two icon buttons placed left of the drag region (after the logo):
+
+| Icon | Action | Shortcut |
+|---|---|---|
+| Arrow-back | Go Back — navigate to the previously active tab | Alt+Left |
+| Arrow-forward | Go Forward — navigate forward after going back | Alt+Right |
+
+Buttons are disabled (grayed out) when there is no history to navigate in that direction. Navigating back then opening a new tab clears the forward stack. If a target tab was closed, that entry is silently skipped. Navigation works across both split slots but does not re-enable split if it was toggled off.
 
 ### Title Bar Panel Toggle Buttons
 
@@ -270,6 +281,29 @@ Option B — Detail view:
 [Switching back to the same history-detail tab: version is restored from cache]
 ```
 
+### Flow 13 — Tab Navigation History
+
+```
+[User switches between tabs (any method: sidebar click, tab bar click, etc.)]
+        ↓
+[Each activation is recorded in a navigation history stack]
+        ↓
+[Back button (or Alt+Left) becomes enabled once there is a prior entry]
+
+[Click Back / press Alt+Left]
+        ↓
+[App navigates to the previously active tab (in whichever slot it lives)]
+  If that tab was closed → silently skip to the next live entry
+        ↓
+[Forward button (or Alt+Right) becomes enabled]
+
+[Click Forward / press Alt+Right]
+        ↓
+[App navigates to the next entry in history]
+        ↓
+[Opening any new tab after going back clears the forward stack]
+```
+
 ### Flow 12 — Manage Environments
 
 ```
@@ -297,6 +331,7 @@ Option B — Detail view:
 App
 ├── TitleBar
 │   ├── Logo + "ZEONTA" (no-drag zone)
+│   ├── Back / Forward nav buttons (no-drag zone; disabled when no history in that direction)
 │   ├── Drag region (window drag, double-click to maximize)
 │   └── Panel toggles (SidePanel, OutputPanel, RightSidebar) + Window controls
 ├── FunctionBar (48px icon rail)
