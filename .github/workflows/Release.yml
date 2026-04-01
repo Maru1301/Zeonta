@@ -55,7 +55,7 @@ jobs:
             platform: darwin/arm64
             artifact_name: zeonta-macos-arm64
             artifact_path: build/bin/zeonta
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             platform: linux/amd64
             artifact_name: zeonta-linux-amd64
             artifact_path: build/bin/zeonta
@@ -77,7 +77,7 @@ jobs:
           node-version: 'lts/*'
 
       - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
