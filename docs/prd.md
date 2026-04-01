@@ -6,7 +6,7 @@ Derived from [constitution.md](../constitution.md). This document breaks the v1 
 
 ## Users
 
-**Primary user:** A developer or technical user who frequently runs shell scripts (`.bat`, `.ps1`) or Go functions on Windows and wants a GUI to manage and execute them without opening a terminal.
+**Primary user:** A developer or technical user who frequently runs shell scripts or Go functions and wants a GUI to manage and execute them without opening a terminal. Runs on Windows, macOS, and Linux.
 
 ---
 
@@ -19,7 +19,7 @@ As a user, I can create a new tool by giving it a name, writing a script or Go f
 
 **Acceptance criteria:**
 - ✅ User can open a "New Tool" form from the main UI
-- ✅ Form has fields for: tool name, tool type (shell script / Go function), and script/function body
+- ✅ Form has fields for: tool name, tool type (PowerShell / CMD / Bash / AppleScript / Python / Go), and script/function body; available types are filtered to those supported on the current platform
 - ✅ Tool name must be unique and non-empty; validation error shown if violated
 - ✅ User can save the tool; it appears in the tool list immediately
 - ✅ Saved tools persist across app restarts
@@ -118,8 +118,8 @@ As a user, I can export my tools to a file and import tools from a file — so t
 - ✅ User can select any subset of tools and click "Export (N)" to open a native save dialog
 - ✅ The exported file is a JSON envelope containing the selected tools' name, type, body, desc, and params (no IDs or timestamps)
 - ✅ If the user cancels the save dialog the panel stays open; it closes only after a file is actually written
-- ✅ Clicking "Import" opens a native multi-file picker supporting `.json`, `.ps1`, `.bat`, and `.go`
-- ✅ Imported `.ps1` / `.bat` files create a shell tool; `.go` files create a Go tool — name derived from filename, desc and params empty
+- ✅ Clicking "Import" opens a native multi-file picker supporting `.json`, `.ps1`, `.bat`, `.sh`, `.py`, and `.go`
+- ✅ Imported script files create a tool of the matching type (`.ps1` → PowerShell, `.bat` → CMD, `.sh` → Bash, `.py` → Python, `.go` → Go) — name derived from filename, desc and params empty
 - ✅ Tools whose names already exist are skipped (not overwritten); the result message lists skipped names
 - ✅ A snackbar confirms success or reports failure for both operations
 
@@ -196,7 +196,7 @@ As a user, I can navigate back and forward through my recently active tabs — s
 | Requirement | Target |
 |---|---|
 | Binary size | ≤ 10MB |
-| Platform | Windows only |
+| Platform | Windows, macOS, Linux |
 | Network | No network calls at any point |
 | Startup time | App ready within 3 seconds on a modern machine |
 | Script execution | Output begins streaming within 1 second of run |

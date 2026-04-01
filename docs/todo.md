@@ -10,7 +10,7 @@ Features deferred from v1 scope. Source: [prd.md](prd.md) and [constitution.md](
 - [ ] **Tool categories / tags** — organize tools in the sidebar by group
 - ✅ **Execution history / logs** — persist a log of past runs with timestamps and output
 - [ ] **Scheduled execution** — run tools automatically on a cron-like schedule
-- [ ] **macOS / Linux support** — extend platform support beyond Windows
+- ✅ **macOS / Linux support** — extend platform support beyond Windows
 - [ ] **Go snippet: third-party package support** — create a temp go.mod and run `go get` so snippets can use packages beyond the standard library
 - ✅ **Theme toggle** — switch between dark and light mode; persist the user's preference across sessions
 - ✅ **Custom scrollbar** — replace the default OS scrollbar with a styled scrollbar that matches the app theme

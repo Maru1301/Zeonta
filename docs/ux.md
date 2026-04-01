@@ -1,4 +1,4 @@
-# UX Design — Zeonta 0.6.0
+# UX Design — Zeonta 0.7.2
 
 Defines the screen layout, user flows, and visual style for the Zeonta frontend.
 All implementation must follow this document. Code must not introduce layouts or flows not described here.
@@ -105,7 +105,7 @@ Active panels are indicated by a highlighted button state.
 [Click "+ New Tool"]
         ↓
 [A "New Tool" tab opens in the active main area slot]
-  Form: Name, Type (shell/Go), Description, Script Body, Parameters
+  Form: Name, Type (filtered to platform-supported types), Description, Script Body, Parameters
         ↓
 [User fills form, clicks "Save"]
         ↓
@@ -175,7 +175,7 @@ The user edits values directly and clicks "Run" — no separate panel is opened.
 ```
 [Side Panel (Tools function): click "Import"]
         ↓
-[Native multi-file picker opens — accepts .json, .ps1, .bat, .go]
+[Native multi-file picker opens — accepts .json, .ps1, .bat, .sh, .py, .go]
   If cancelled → nothing happens
         ↓
 [Each selected file is parsed and tools are created]

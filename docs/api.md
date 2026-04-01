@@ -156,6 +156,15 @@ type RunResult struct {
 
 ## Methods
 
+### Platform
+
+#### `GetPlatform() string`
+Returns the current operating system identifier: `"windows"`, `"darwin"`, or `"linux"`.
+
+The frontend calls this on mount to filter the type selector to only show tool types supported on the current platform, and to disable the Run button for incompatible tools.
+
+---
+
 ### Tool Management
 
 #### `ListTools() []ToolSummary`
@@ -246,7 +255,7 @@ Opens a native save dialog and writes the selected tools to a JSON file.
 {
   "version": "0.1.0",
   "tools": [
-    { "name": "...", "type": "shell|go", "body": "...", "desc": "...", "params": [...] }
+    { "name": "...", "type": "powershell|cmd|bash|applescript|python|go", "body": "...", "desc": "...", "params": [...] }
   ]
 }
 ```
@@ -262,8 +271,11 @@ Supported file types:
 | Extension | Behaviour |
 |---|---|
 | `.json` | Parsed as a Zeonta export file; imports all tools inside |
-| `.ps1`, `.bat` | Creates one shell tool; name derived from filename; body = file contents |
-| `.go` | Creates one Go tool; name derived from filename; body = file contents |
+| `.ps1` | Creates one `powershell` tool; name derived from filename; body = file contents |
+| `.bat`, `.cmd` | Creates one `cmd` tool; name derived from filename; body = file contents |
+| `.sh` | Creates one `bash` tool; name derived from filename; body = file contents |
+| `.py` | Creates one `python` tool; name derived from filename; body = file contents |
+| `.go` | Creates one `go` tool; name derived from filename; body = file contents |
 
 - Tools whose names already exist are skipped; their names are added to `Skipped`.
 - Files that cannot be read or parsed are skipped; the filename is added to `Skipped`.
@@ -381,6 +393,7 @@ Emitted by the backend during execution. The frontend listens with `EventsOn`.
 
 ```ts
 import {
+  GetPlatform,
   ListTools, GetTool, CreateTool, UpdateTool, DeleteTool, RunTool,
   ExportTools, ImportTools,
   ListHistory, GetHistoryEntry, ClearHistory,
@@ -388,6 +401,9 @@ import {
   ListDeletedTools, RestoreDeletedTool, ClearTrashByIDs,
 } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime";
+
+// Get current platform ("windows" | "darwin" | "linux")
+const platform = await GetPlatform();
 
 // List all tools for the sidebar
 const summaries = await ListTools();
