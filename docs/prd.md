@@ -186,7 +186,7 @@ As a user, I can navigate back and forward through my recently active tabs — s
 - ✅ Buttons are disabled (grayed out) when there is no history to navigate in that direction
 - ✅ History is recorded for every tab activation, regardless of how the tab was activated (click, sidebar, programmatic)
 - ✅ Navigating back then opening a new tab clears the forward stack (same behavior as browsers and VS Code)
-- ✅ If a tab was closed before navigating back to it, that entry is silently skipped
+- ✅ If a tab was closed before navigating back to it, that tab is reopened automatically
 - ✅ Navigation works across both split slots
 
 ---

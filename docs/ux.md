@@ -69,7 +69,7 @@ Two icon buttons placed left of the drag region (after the logo):
 | Arrow-back | Go Back — navigate to the previously active tab | Alt+Left |
 | Arrow-forward | Go Forward — navigate forward after going back | Alt+Right |
 
-Buttons are disabled (grayed out) when there is no history to navigate in that direction. Navigating back then opening a new tab clears the forward stack. If a target tab was closed, that entry is silently skipped. Navigation works across both split slots but does not re-enable split if it was toggled off.
+Buttons are disabled (grayed out) when there is no history to navigate in that direction. Navigating back then opening a new tab clears the forward stack. If a target tab was closed, it is automatically reopened. Navigation works across both split slots but does not re-enable split if it was toggled off.
 
 ### Title Bar Panel Toggle Buttons
 
@@ -293,7 +293,7 @@ Option B — Detail view:
 [Click Back / press Alt+Left]
         ↓
 [App navigates to the previously active tab (in whichever slot it lives)]
-  If that tab was closed → silently skip to the next live entry
+  If that tab was closed → it is reopened automatically
         ↓
 [Forward button (or Alt+Right) becomes enabled]
 

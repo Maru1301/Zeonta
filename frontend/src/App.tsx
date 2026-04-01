@@ -96,7 +96,7 @@ export default function App() {
   const [saveCount, setSaveCount] = useState(0)
 
   // ── Navigation history (Go Back / Go Forward) ────────────
-  const { pushNav, goBack, goForward, canGoBack, canGoForward } = useNavHistory(tabState)
+  const { pushNav, goBack, goForward, canGoBack, canGoForward } = useNavHistory()
   // Tracks the last pushed "slotIndex:tabId" key to skip duplicates
   const prevNavKeyRef = useRef<string | null>(null)
   // Set true before programmatic back/forward to suppress the resulting push
@@ -152,28 +152,34 @@ export default function App() {
     if (key === prevNavKeyRef.current) return
     prevNavKeyRef.current = key
     if (!skipNavPushRef.current) {
-      pushNav({ slotIndex: tabState.activeSlot, tabId: activeTab.id })
+      pushNav({ slotIndex: tabState.activeSlot, tab: activeTab })
     }
     skipNavPushRef.current = false
   }, [tabState, pushNav])
 
   const handleGoBack = useCallback(() => {
-    const entry = goBack(tabState)
+    const entry = goBack()
     if (!entry) return
-    const location = findTab(tabState, entry)
-    if (!location) return
     skipNavPushRef.current = true
-    activateTab(location.slotIndex, location.tabIndex)
-  }, [tabState, goBack, activateTab])
+    const location = findTab(tabState, entry)
+    if (location) {
+      activateTab(location.slotIndex, location.tabIndex)
+    } else {
+      openTab(entry.tab)
+    }
+  }, [tabState, goBack, activateTab, openTab])
 
   const handleGoForward = useCallback(() => {
-    const entry = goForward(tabState)
+    const entry = goForward()
     if (!entry) return
-    const location = findTab(tabState, entry)
-    if (!location) return
     skipNavPushRef.current = true
-    activateTab(location.slotIndex, location.tabIndex)
-  }, [tabState, goForward, activateTab])
+    const location = findTab(tabState, entry)
+    if (location) {
+      activateTab(location.slotIndex, location.tabIndex)
+    } else {
+      openTab(entry.tab)
+    }
+  }, [tabState, goForward, activateTab, openTab])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
