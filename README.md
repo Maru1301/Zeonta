@@ -4,10 +4,10 @@
 
 Zeonta is a desktop application for users who frequently work with shell scripts or Go functions. Instead of jumping to the terminal each time, you write your scripts or Go functions directly in the app, store them as named tools, configure parameters and environment variables, and run them with a single click.
 
-> **Platform:** Windows only (v1)
+> **Platform:** Windows · macOS · Linux
 
 ## ✨ Key Features
-- 📝 **Script & Function Storage:** Write and store PowerShell/batch scripts or Go functions as reusable named tools.
+- 📝 **Script & Function Storage:** Write and store scripts or Go functions as reusable named tools. Supported types: PowerShell, CMD/Batch, Bash, AppleScript, Python, Go.
 - ⚙️ **Parameterization:** Define input parameters per tool, editable at runtime before each run.
 - 🌐 **Global Environment Sets:** Create named sets of environment variables (e.g. "Dev", "Prod") and activate one globally — all tools run against it automatically.
 - 🚀 **One-Click Execution:** Run any stored tool instantly from the UI — output streams live in a dedicated output panel.
@@ -15,14 +15,14 @@ Zeonta is a desktop application for users who frequently work with shell scripts
 - 🕒 **Version History:** Every tool save is snapshotted automatically. Browse past versions, run old versions directly, or restore any previous state.
 - 🗑 **Trash & Restore:** Deleted tools are kept in a Trash panel. Restore individual versions or bulk-restore multiple tools. Permanently delete when ready.
 - 📋 **Run History:** Every execution is logged with output, exit code, and a link to the exact version that was run.
-- 📦 **Offline & Self-Contained:** Runs entirely offline. All tool data is stored locally in `%APPDATA%\Zeonta\zeonta.db`.
+- 📦 **Offline & Self-Contained:** Runs entirely offline. All tool data is stored locally in the platform config directory (`%APPDATA%\Zeonta` on Windows, `~/Library/Application Support/Zeonta` on macOS, `~/.config/Zeonta` on Linux).
 
 ## 💡 Using Zeonta
 
 ### Creating a Tool
 1. Click the **Tools** icon in the left function bar to open the tool list.
 2. Click **+ New Tool** — a new tab opens in the main area with a blank form.
-3. Fill in the tool name, select the type (Shell or Go), and write the script body.
+3. Fill in the tool name, select the type (filtered to types supported on your platform), and write the script body.
 4. Optionally add **Parameters**.
 5. Click **Save** — the tool tab opens automatically and the tool list refreshes.
 
@@ -37,7 +37,7 @@ curl {{BASE_URL}}/api/[[TARGET]]
 **Resolution order at runtime:**
 1. `{{ENV_VAR}}` references are resolved first using the active environment set — including inside parameter default values.
 2. `[[PARAM]]` references are resolved in the script body with the user-supplied values.
-3. Environment variables are also injected into the subprocess environment (accessible as `$env:KEY` in PowerShell).
+3. Environment variables are also injected into the subprocess environment (accessible as `$env:KEY` in PowerShell, `$KEY` in Bash/Python, etc.).
 
 ### Environment Sets
 Instead of per-tool environment variables, Zeonta uses **global environment sets**. Create a named set (e.g. "Dev", "Prod") with any number of key-value pairs, then mark one as active. All tools automatically run against the active environment. Switch environments without touching individual tools.
@@ -79,6 +79,7 @@ Deleted tools are not permanently removed — they move to the **Trash**. A badg
    ```
    go install github.com/wailsapp/wails/v2/cmd/wails@latest
    ```
+4. **Linux only:** `sudo apt-get install -y libwebkit2gtk-4.0-37 libgtk-3-0`
 
 ### Run in Development Mode
 ```bash

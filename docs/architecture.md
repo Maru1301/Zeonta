@@ -1,4 +1,4 @@
-# Architecture — Zeonta 0.6.0
+# Architecture — Zeonta 0.7.2
 
 Defines the system structure, layer boundaries, storage design, and data flow.
 Read alongside [ux.md](ux.md) (UI/UX) and [api.md](api.md) (method contracts).
@@ -113,7 +113,7 @@ zeonta/
 - Returns human-readable errors — never raw Go or SQLite error strings
 
 ### `internal/store`
-- Opens `%APPDATA%\Zeonta\zeonta.db` on startup, creating the file and directory if absent
+- Opens the Zeonta data directory on startup, creating the file and directory if absent
 - Runs schema migrations (`CREATE TABLE IF NOT EXISTS`) on every startup
 - Never contains execution or business logic
 
@@ -128,7 +128,13 @@ zeonta/
 
 **Driver:** `modernc.org/sqlite` (pure Go, no CGO, no C compiler required)
 
-**Location:** `%APPDATA%\Zeonta\zeonta.db`
+**Location:** `os.UserConfigDir()/Zeonta/zeonta.db`
+
+| Platform | Resolved path |
+|---|---|
+| Windows | `%APPDATA%\Zeonta\zeonta.db` |
+| macOS | `~/Library/Application Support/Zeonta/zeonta.db` |
+| Linux | `~/.config/Zeonta/zeonta.db` |
 
 **Schema:**
 
@@ -136,7 +142,7 @@ zeonta/
 CREATE TABLE IF NOT EXISTS tools (
     id         TEXT    PRIMARY KEY,
     name       TEXT    UNIQUE NOT NULL,
-    type       TEXT    NOT NULL,        -- "shell" | "go"
+    type       TEXT    NOT NULL,        -- "powershell" | "cmd" | "bash" | "applescript" | "python" | "go"
     body       TEXT    NOT NULL,
     created_at INTEGER NOT NULL         -- Unix timestamp
 );
@@ -301,8 +307,10 @@ executor — variable resolution (strictly in order):
   2. Replace [[PARAM_NAME]] in script body with user-supplied param values
       │
       ▼
-executor — write resolved script to temp file, start subprocess
-  (PowerShell for type=shell, `go run` for type=go)
+executor — platform guard check (e.g. powershell/cmd are Windows-only; bash is macOS/Linux-only)
+      │       write resolved script to temp file, start subprocess
+  (powershell.exe for type=powershell, cmd.exe for type=cmd, /bin/bash for type=bash,
+   osascript for type=applescript, python3/python for type=python, `go run` for type=go)
       │
       ├── stream stdout+stderr chunks → emit tool:output events
       │
@@ -324,7 +332,7 @@ Frontend: OutputPanel displays streamed output + exit code badge
 
 ## Key Constraints
 
-- Binary target: Windows only, `wails build -platform windows/amd64 -ldflags "-s -w"`
+- Binary targets: Windows (`windows/amd64`), macOS (`darwin/amd64`, `darwin/arm64`), Linux (`linux/amd64`) — built via CI matrix
 - Binary size: ~14MB in practice — `modernc.org/sqlite` (pure Go, no CGO) contributes ~8MB; this supersedes the original 10MB target which was set before SQLite was chosen
 - No network calls anywhere in the codebase
 - `wailsjs/` is auto-generated — never edit manually
