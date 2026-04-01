@@ -1,22 +1,26 @@
 name: Release
 
 on:
-  push:
+  pull_request:
     branches:
       - main
+    types: [closed] # 當 PR 被關閉時觸發
 
 jobs:
   release:
+    # 只有當 PR 是被合併 (merged) 而不是直接關閉時才執行
+    if: github.event.pull_request.merged == true
     runs-on: windows-latest
     permissions:
       contents: write
+      pull-requests: read # 需要讀取 PR 內容的權限
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Extract version from wails.json
+      # 1. 取得版本號
       - name: Get version from wails.json
         id: version
         shell: pwsh
@@ -25,7 +29,7 @@ jobs:
           echo "VERSION=$version" >> $env:GITHUB_OUTPUT
           echo "Detected version: $version"
 
-      # Skip if this version was already released
+      # 2. 檢查 Tag 是否已存在
       - name: Check if tag exists
         id: tag_check
         shell: pwsh
@@ -34,122 +38,54 @@ jobs:
           $tagExists = git tag -l "v${{ steps.version.outputs.VERSION }}"
           if ($tagExists) {
             echo "SKIP=true" >> $env:GITHUB_OUTPUT
-            echo "Tag v${{ steps.version.outputs.VERSION }} already exists, skipping release."
           } else {
             echo "SKIP=false" >> $env:GITHUB_OUTPUT
           }
 
-      # Generate changelog from conventional commits since last tag
-      - name: Generate Changelog
+      # 3. 擷取 PR 的標題與內文作為 Release Notes
+      - name: Generate Release Notes from PR
         if: steps.tag_check.outputs.SKIP == 'false'
-        id: changelog
+        id: pr_data
         shell: pwsh
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          # Get the last tag, or use initial commit if no tags exist
-          $lastTag = git describe --tags --abbrev=0 2>$null
-          if ($lastTag) {
-            $commits = git log "$lastTag..HEAD" --pretty=format:"%s" --no-merges
-          } else {
-            $commits = git log --pretty=format:"%s" --no-merges
+          $content = "## $env:PR_TITLE`n`n"
+          $content += "$env:PR_BODY"
+          
+          if ([string]::IsNullOrWhiteSpace($env:PR_BODY)) {
+            $content = "## $env:PR_TITLE`n`nNo description provided."
           }
 
-          $features = @()
-          $fixes = @()
-          $chores = @()
-          $docs = @()
-          $refactors = @()
-          $others = @()
+          $content | Out-File -FilePath "RELEASE_NOTES.md" -Encoding utf8
+          echo "Release notes generated from PR."
 
-          foreach ($line in $commits) {
-            if ($line -match "^feat(\(.+?\))?:\s*(.+)") {
-              $features += $matches[2]
-            } elseif ($line -match "^fix(\(.+?\))?:\s*(.+)") {
-              $fixes += $matches[2]
-            } elseif ($line -match "^chore(\(.+?\))?:\s*(.+)") {
-              $chores += $matches[2]
-            } elseif ($line -match "^docs(\(.+?\))?:\s*(.+)") {
-              $docs += $matches[2]
-            } elseif ($line -match "^refactor(\(.+?\))?:\s*(.+)") {
-              $refactors += $matches[2]
-            } elseif ($line -notmatch "^Merge ") {
-              $others += $line
-            }
-          }
-
-          $body = ""
-
-          if ($features.Count -gt 0) {
-            $body += "## Features`n`n"
-            foreach ($f in $features) { $body += "- $f`n" }
-            $body += "`n"
-          }
-
-          if ($fixes.Count -gt 0) {
-            $body += "## Bug Fixes`n`n"
-            foreach ($f in $fixes) { $body += "- $f`n" }
-            $body += "`n"
-          }
-
-          if ($refactors.Count -gt 0) {
-            $body += "## Refactors`n`n"
-            foreach ($f in $refactors) { $body += "- $f`n" }
-            $body += "`n"
-          }
-
-          if ($docs.Count -gt 0) {
-            $body += "## Documentation`n`n"
-            foreach ($f in $docs) { $body += "- $f`n" }
-            $body += "`n"
-          }
-
-          if ($chores.Count -gt 0) {
-            $body += "## Chores`n`n"
-            foreach ($f in $chores) { $body += "- $f`n" }
-            $body += "`n"
-          }
-
-          if ($others.Count -gt 0) {
-            $body += "## Other Changes`n`n"
-            foreach ($f in $others) { $body += "- $f`n" }
-            $body += "`n"
-          }
-
-          if ($body -eq "") {
-            $body = "No notable changes."
-          }
-
-          # Write to file to avoid escaping issues
-          $body | Out-File -FilePath "RELEASE_NOTES.md" -Encoding utf8
-          echo "Generated release notes:"
-          echo $body
-
-      # Setup Go
+      # 4. 環境設定 (Go / Node / Wails)
       - name: Setup Go
         if: steps.tag_check.outputs.SKIP == 'false'
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
 
-      # Setup Node.js
       - name: Setup Node.js
         if: steps.tag_check.outputs.SKIP == 'false'
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
 
-      # Install Wails CLI
       - name: Install Wails
         if: steps.tag_check.outputs.SKIP == 'false'
         shell: pwsh
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-      # Build the Windows app
+      # 5. 編譯專案
       - name: Build
         if: steps.tag_check.outputs.SKIP == 'false'
         shell: pwsh
         run: wails build -platform windows/amd64
 
-      # Create git tag
+      # 6. 建立 Git Tag 並推送到遠端
       - name: Create tag
         if: steps.tag_check.outputs.SKIP == 'false'
         shell: pwsh
@@ -159,7 +95,7 @@ jobs:
           git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
           git push origin "v${{ steps.version.outputs.VERSION }}"
 
-      # Create GitHub Release with categorized notes
+      # 7. 發布 GitHub Release
       - name: Create Release
         if: steps.tag_check.outputs.SKIP == 'false'
         uses: softprops/action-gh-release@v2
