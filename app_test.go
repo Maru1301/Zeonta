@@ -24,7 +24,7 @@ func TestParseImportFile_JSON(t *testing.T) {
 	if len(tools) != 2 {
 		t.Fatalf("expected 2 tools, got %d", len(tools))
 	}
-	if tools[0].Name != "greet" || tools[0].Type != store.ToolTypeShell {
+	if tools[0].Name != "greet" || tools[0].Type != store.ToolTypePowerShell {
 		t.Errorf("tool[0]: got name=%q type=%q", tools[0].Name, tools[0].Type)
 	}
 	if tools[1].Name != "run" || tools[1].Type != store.ToolTypeGo {
@@ -47,7 +47,7 @@ func TestParseImportFile_PowerShell(t *testing.T) {
 	if tools[0].Name != "my-script" {
 		t.Errorf("expected name %q, got %q", "my-script", tools[0].Name)
 	}
-	if tools[0].Type != store.ToolTypeShell {
+	if tools[0].Type != store.ToolTypePowerShell {
 		t.Errorf("expected type shell, got %q", tools[0].Type)
 	}
 	if tools[0].Body != body {
@@ -60,7 +60,7 @@ func TestParseImportFile_Bat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tools[0].Type != store.ToolTypeShell || tools[0].Name != "deploy" {
+	if tools[0].Type != store.ToolTypePowerShell || tools[0].Name != "deploy" {
 		t.Errorf("unexpected tool: %+v", tools[0])
 	}
 }

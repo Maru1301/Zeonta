@@ -1,5 +1,5 @@
 import type { AppTab } from '../../types/tabs'
-import type { Tool, ToolSummary, EnvironmentSummary } from '../../types/tool'
+import type { Tool, ToolSummary, EnvironmentSummary, Platform } from '../../types/tool'
 import ContentArea from '../ContentArea/ContentArea'
 import CreatePanel from '../EditPanel/CreatePanel'
 import HistoryDetailPanel from './HistoryDetailPanel'
@@ -23,19 +23,20 @@ interface Props {
   onRestored: (toolId: string) => void
   onEnvironmentSaved: () => void
   onHistoryVersionFound: (entryId: string, toolId: string, versionId: string) => void
+  platform: Platform
 }
 
 export default function TabContent({
   tab, slotIndex, tabIndex,
   toolCache,
   onCloseTab, onSaved, onRun, onToolDeleted, onViewVersion,
-  onRestored, onEnvironmentSaved, onHistoryVersionFound,
+  onRestored, onEnvironmentSaved, onHistoryVersionFound, platform,
 }: Props) {
   const closeThis = () => onCloseTab(slotIndex, tabIndex)
 
   switch (tab.kind) {
     case 'new-tool':
-      return <CreatePanel onSaved={onSaved} onClose={closeThis} />
+      return <CreatePanel onSaved={onSaved} onClose={closeThis} platform={platform} />
 
     case 'tool': {
       const tool = tab.toolId ? (toolCache[tab.toolId] ?? null) : null
@@ -45,6 +46,7 @@ export default function TabContent({
           onSaved={onSaved}
           onRun={(paramValues) => tab.toolId && onRun(tab.toolId, paramValues)}
           onDeleted={onToolDeleted}
+          platform={platform}
         />
       )
     }

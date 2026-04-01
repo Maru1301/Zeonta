@@ -12,8 +12,12 @@ import (
 type ToolType string
 
 const (
-	ToolTypeShell ToolType = "shell"
-	ToolTypeGo    ToolType = "go"
+	ToolTypePowerShell  ToolType = "powershell"
+	ToolTypeCmd         ToolType = "cmd"
+	ToolTypeBash        ToolType = "bash"
+	ToolTypeAppleScript ToolType = "applescript"
+	ToolTypePython      ToolType = "python"
+	ToolTypeGo          ToolType = "go"
 )
 
 // Param is a named input filled by the user before running a tool.

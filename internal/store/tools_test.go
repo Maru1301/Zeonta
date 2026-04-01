@@ -19,7 +19,7 @@ func TestCreateAndGetTool(t *testing.T) {
 
 	tool := Tool{
 		Name: "My Script",
-		Type: ToolTypeShell,
+		Type: ToolTypePowerShell,
 		Body: "echo hello",
 		Desc: "A test script",
 		Params: []Param{
@@ -49,7 +49,7 @@ func TestCreateAndGetTool(t *testing.T) {
 
 func TestCreateTool_DuplicateName(t *testing.T) {
 	s := openTestStore(t)
-	tool := Tool{Name: "dup", Type: ToolTypeShell, Body: "echo"}
+	tool := Tool{Name: "dup", Type: ToolTypePowerShell, Body: "echo"}
 	if _, err := s.CreateTool(tool); err != nil {
 		t.Fatalf("first create: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestCreateTool_DuplicateName(t *testing.T) {
 
 func TestCreateTool_EmptyName(t *testing.T) {
 	s := openTestStore(t)
-	_, err := s.CreateTool(Tool{Type: ToolTypeShell, Body: "echo"})
+	_, err := s.CreateTool(Tool{Type: ToolTypePowerShell, Body: "echo"})
 	if err == nil {
 		t.Fatal("expected error for empty name")
 	}
@@ -68,7 +68,7 @@ func TestCreateTool_EmptyName(t *testing.T) {
 
 func TestListTools(t *testing.T) {
 	s := openTestStore(t)
-	s.CreateTool(Tool{Name: "A", Type: ToolTypeShell, Body: "echo a"})
+	s.CreateTool(Tool{Name: "A", Type: ToolTypePowerShell, Body: "echo a"})
 	s.CreateTool(Tool{Name: "B", Type: ToolTypeGo, Body: "fmt.Println()"})
 
 	list := s.ListTools()
@@ -82,7 +82,7 @@ func TestListTools(t *testing.T) {
 
 func TestUpdateTool(t *testing.T) {
 	s := openTestStore(t)
-	created, _ := s.CreateTool(Tool{Name: "orig", Type: ToolTypeShell, Body: "echo"})
+	created, _ := s.CreateTool(Tool{Name: "orig", Type: ToolTypePowerShell, Body: "echo"})
 
 	created.Name = "updated"
 	created.Body = "echo updated"
@@ -102,7 +102,7 @@ func TestUpdateTool(t *testing.T) {
 
 func TestDeleteTool(t *testing.T) {
 	s := openTestStore(t)
-	created, _ := s.CreateTool(Tool{Name: "to-delete", Type: ToolTypeShell, Body: "echo"})
+	created, _ := s.CreateTool(Tool{Name: "to-delete", Type: ToolTypePowerShell, Body: "echo"})
 
 	if err := s.DeleteTool(created.ID); err != nil {
 		t.Fatalf("delete: %v", err)
@@ -121,7 +121,7 @@ func TestDeleteTool_NotFound(t *testing.T) {
 
 func TestGetTool_EmptyParamsNotNil(t *testing.T) {
 	s := openTestStore(t)
-	created, err := s.CreateTool(Tool{Name: "no-params", Type: ToolTypeShell, Body: "echo"})
+	created, err := s.CreateTool(Tool{Name: "no-params", Type: ToolTypePowerShell, Body: "echo"})
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestGetTool_EmptyParamsNotNil(t *testing.T) {
 func TestDescLengthConstraint(t *testing.T) {
 	s := openTestStore(t)
 	longDesc := string(make([]rune, 301))
-	_, err := s.CreateTool(Tool{Name: "x", Type: ToolTypeShell, Body: "echo", Desc: longDesc})
+	_, err := s.CreateTool(Tool{Name: "x", Type: ToolTypePowerShell, Body: "echo", Desc: longDesc})
 	if err == nil {
 		t.Fatal("expected error: desc exceeds 300 chars")
 	}

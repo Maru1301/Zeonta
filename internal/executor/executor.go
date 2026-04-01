@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"zeonta/internal/store"
@@ -119,6 +120,21 @@ type RunResult struct {
 	Error    string `json:"error"`
 }
 
+// platformOf returns the OS names on which a tool type can run.
+// A nil return means the type runs on all platforms.
+func platformOf(t store.ToolType) []string {
+	switch t {
+	case store.ToolTypePowerShell, store.ToolTypeCmd:
+		return []string{"windows"}
+	case store.ToolTypeBash:
+		return []string{"darwin", "linux"}
+	case store.ToolTypeAppleScript:
+		return []string{"darwin"}
+	default:
+		return nil
+	}
+}
+
 // Run executes a tool with the given input.
 // envVars is the active environment's key-value pairs, resolved from the store by the caller.
 // emit is called for each line of output during execution.
@@ -159,9 +175,34 @@ func Run(tool store.Tool, input RunInput, envVars map[string]string, emit func(s
 	}
 
 	// Write resolved body to a temp file and execute
+	if platforms := platformOf(tool.Type); platforms != nil {
+		ok := false
+		for _, p := range platforms {
+			if p == runtime.GOOS {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return RunResult{Error: fmt.Sprintf("tool type %q is not supported on %s", tool.Type, runtime.GOOS)}
+		}
+	}
+
 	switch tool.Type {
-	case store.ToolTypeShell:
+	case store.ToolTypePowerShell:
 		return runScript(resolvedBody, ".ps1", []string{"powershell.exe", "-ExecutionPolicy", "Bypass", "-File"}, env, emit)
+	case store.ToolTypeCmd:
+		return runScript(resolvedBody, ".bat", []string{"cmd.exe", "/C"}, env, emit)
+	case store.ToolTypeBash:
+		return runScript(resolvedBody, ".sh", []string{"/bin/bash"}, env, emit)
+	case store.ToolTypeAppleScript:
+		return runScript(resolvedBody, ".applescript", []string{"osascript"}, env, emit)
+	case store.ToolTypePython:
+		pyCmd := "python3"
+		if runtime.GOOS == "windows" {
+			pyCmd = "python"
+		}
+		return runScript(resolvedBody, ".py", []string{pyCmd}, env, emit)
 	case store.ToolTypeGo:
 		return runScript(wrapGoSnippet(resolvedBody), ".go", []string{"go", "run"}, env, emit)
 	default:

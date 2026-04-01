@@ -6,8 +6,100 @@ on:
       - main
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+      skip: ${{ steps.tag_check.outputs.SKIP }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from wails.json
+        id: version
+        run: |
+          VERSION=$(cat wails.json | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Check if tag exists
+        id: tag_check
+        run: |
+          git fetch --tags
+          if git tag -l "v${{ steps.version.outputs.VERSION }}" | grep -q .; then
+            echo "SKIP=true" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.VERSION }} already exists, skipping release."
+          else
+            echo "SKIP=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    needs: check-version
+    if: needs.check-version.outputs.skip == 'false'
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows/amd64
+            artifact_name: zeonta.exe
+            artifact_path: build/bin/zeonta.exe
+          - os: macos-latest
+            platform: darwin/amd64
+            artifact_name: zeonta-macos-amd64
+            artifact_path: build/bin/zeonta
+          - os: macos-14
+            platform: darwin/arm64
+            artifact_name: zeonta-macos-arm64
+            artifact_path: build/bin/zeonta
+          - os: ubuntu-latest
+            platform: linux/amd64
+            artifact_name: zeonta-linux-amd64
+            artifact_path: build/bin/zeonta
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build
+        run: wails build -platform ${{ matrix.platform }}
+
+      - name: Rename artifact (non-Windows)
+        if: matrix.os != 'windows-latest'
+        run: mv ${{ matrix.artifact_path }} build/bin/${{ matrix.artifact_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: build/bin/${{ matrix.artifact_name }}
+
   release:
-    runs-on: windows-latest
+    needs: [check-version, build]
+    if: needs.check-version.outputs.skip == 'false'
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
@@ -16,72 +108,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Extract version from wails.json
-      - name: Get version from wails.json
-        id: version
-        shell: pwsh
-        run: |
-          $version = (Get-Content wails.json | ConvertFrom-Json).version
-          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
-          echo "Detected version: $version"
-
-      # Skip if this version was already released
-      - name: Check if tag exists
-        id: tag_check
-        shell: pwsh
-        run: |
-          git fetch --tags
-          $tagExists = git tag -l "v${{ steps.version.outputs.VERSION }}"
-          if ($tagExists) {
-            echo "SKIP=true" >> $env:GITHUB_OUTPUT
-            echo "Tag v${{ steps.version.outputs.VERSION }} already exists, skipping release."
-          } else {
-            echo "SKIP=false" >> $env:GITHUB_OUTPUT
-          }
-
-      # Setup Go
-      - name: Setup Go
-        if: steps.tag_check.outputs.SKIP == 'false'
-        uses: actions/setup-go@v5
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
-          go-version: 'stable'
+          path: dist/
 
-      # Setup Node.js
-      - name: Setup Node.js
-        if: steps.tag_check.outputs.SKIP == 'false'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-
-      # Install Wails CLI
-      - name: Install Wails
-        if: steps.tag_check.outputs.SKIP == 'false'
-        shell: pwsh
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-      # Build the Windows app
-      - name: Build
-        if: steps.tag_check.outputs.SKIP == 'false'
-        shell: pwsh
-        run: wails build -platform windows/amd64
-
-      # Create git tag
       - name: Create tag
-        if: steps.tag_check.outputs.SKIP == 'false'
-        shell: pwsh
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git tag -a "v${{ steps.version.outputs.VERSION }}" -m "Release v${{ steps.version.outputs.VERSION }}"
-          git push origin "v${{ steps.version.outputs.VERSION }}"
+          git tag -a "v${{ needs.check-version.outputs.version }}" -m "Release v${{ needs.check-version.outputs.version }}"
+          git push origin "v${{ needs.check-version.outputs.version }}"
 
-      # Create GitHub Release with the .exe attached
       - name: Create Release
-        if: steps.tag_check.outputs.SKIP == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v${{ steps.version.outputs.VERSION }}"
-          name: "Zeonta v${{ steps.version.outputs.VERSION }}"
+          tag_name: "v${{ needs.check-version.outputs.version }}"
+          name: "Zeonta v${{ needs.check-version.outputs.version }}"
           generate_release_notes: true
-          files: |
-            build/bin/*.exe
+          files: dist/**/*

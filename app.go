@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -52,12 +53,18 @@ func parseImportFile(filename string, content []byte) ([]store.Tool, error) {
 			tools[i] = store.Tool{Name: t.Name, Type: t.Type, Body: t.Body, Desc: t.Desc, Params: t.Params}
 		}
 		return tools, nil
-	case ".ps1", ".bat":
-		return []store.Tool{{Name: base, Type: store.ToolTypeShell, Body: string(content)}}, nil
+	case ".ps1":
+		return []store.Tool{{Name: base, Type: store.ToolTypePowerShell, Body: string(content)}}, nil
+	case ".bat", ".cmd":
+		return []store.Tool{{Name: base, Type: store.ToolTypeCmd, Body: string(content)}}, nil
+	case ".sh":
+		return []store.Tool{{Name: base, Type: store.ToolTypeBash, Body: string(content)}}, nil
+	case ".py":
+		return []store.Tool{{Name: base, Type: store.ToolTypePython, Body: string(content)}}, nil
 	case ".go":
 		return []store.Tool{{Name: base, Type: store.ToolTypeGo, Body: string(content)}}, nil
 	default:
-		return nil, fmt.Errorf("unsupported file type %q — use .json, .ps1, .bat, or .go", ext)
+		return nil, fmt.Errorf("unsupported file type %q — use .json, .ps1, .bat, .cmd, .sh, .py, or .go", ext)
 	}
 }
 
@@ -74,6 +81,11 @@ func NewApp(s *store.Store, version string) *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+// GetPlatform returns the current OS: "windows", "darwin", or "linux".
+func (a *App) GetPlatform() string {
+	return goruntime.GOOS
 }
 
 // ListTools returns all saved tools as summaries for the sidebar.
