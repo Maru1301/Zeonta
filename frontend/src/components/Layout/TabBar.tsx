@@ -110,7 +110,7 @@ export default function TabBar({
               px: 1.5,
               height: 36,
               flexShrink: 0,
-              cursor: 'grab',
+              cursor: 'pointer',
               borderRight: '1px solid',
               borderColor: 'divider',
               borderLeft: isDragOver ? '2px solid' : '2px solid transparent',
