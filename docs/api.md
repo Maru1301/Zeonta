@@ -13,8 +13,12 @@ The frontend **must** only call methods listed here. `app.go` **must** implement
 type ToolType string
 
 const (
-    ToolTypeShell ToolType = "shell" // executed via PowerShell or cmd
-    ToolTypeGo    ToolType = "go"    // executed via go run
+    ToolTypePowerShell  ToolType = "powershell"  // Windows: PowerShell
+    ToolTypeCmd         ToolType = "cmd"          // Windows: CMD/batch
+    ToolTypeBash        ToolType = "bash"         // macOS, Linux: /bin/bash
+    ToolTypeAppleScript ToolType = "applescript"  // macOS: osascript
+    ToolTypePython      ToolType = "python"       // all platforms: python3 / python
+    ToolTypeGo          ToolType = "go"           // all platforms: go run
 )
 
 // Param is a named input that the user fills before running a tool

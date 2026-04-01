@@ -97,6 +97,10 @@ func Open(path string) (*Store, error) {
 	// Additive migrations — errors are ignored when the column already exists.
 	_, _ = db.Exec(`ALTER TABLE run_history ADD COLUMN version_id TEXT NOT NULL DEFAULT ''`)
 
+	// Data migrations — idempotent; safe to run on every startup.
+	_, _ = db.Exec(`UPDATE tools SET type = 'powershell' WHERE type = 'shell'`)
+	_, _ = db.Exec(`UPDATE tool_versions SET type = 'powershell' WHERE type = 'shell'`)
+
 	return &Store{db: db}, nil
 }
 

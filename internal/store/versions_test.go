@@ -5,7 +5,7 @@ import (
 )
 
 func makeTestTool(s *Store, name string) Tool {
-	t, err := s.CreateTool(Tool{Name: name, Type: ToolTypeShell, Body: "echo hello"})
+	t, err := s.CreateTool(Tool{Name: name, Type: ToolTypePowerShell, Body: "echo hello"})
 	if err != nil {
 		panic(err)
 	}

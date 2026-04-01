@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Box } from '@mui/material'
 import type { TabState } from '../../types/tabs'
-import type { Tool, ToolSummary, EnvironmentSummary } from '../../types/tool'
+import type { Tool, ToolSummary, EnvironmentSummary, Platform } from '../../types/tool'
 import TabBar from './TabBar'
 import ResizeHandle from './ResizeHandle'
 import TabContent from './TabContent'
@@ -30,6 +30,7 @@ interface Props {
   onEnvironmentSaved: () => void
   onHistoryVersionFound: (entryId: string, toolId: string, versionId: string) => void
   containerWidth: number
+  platform: Platform
 }
 
 export default function MainArea({
@@ -39,6 +40,7 @@ export default function MainArea({
   toolCache, tools, runCount, activeEnvironment,
   onSaved, onRun, onToolDeleted, onViewVersion,
   onRestored, onEnvironmentSaved, onHistoryVersionFound,
+  platform,
 }: Props) {
   const { slots, activeSlot, splitEnabled } = tabState
   const [dragOverSlot, setDragOverSlot] = useState<0 | 1 | null>(null)
@@ -83,7 +85,7 @@ export default function MainArea({
   const contentProps = {
     toolCache, tools, runCount, activeEnvironment,
     onCloseTab, onSaved, onRun, onToolDeleted, onViewVersion,
-    onRestored, onEnvironmentSaved, onHistoryVersionFound,
+    onRestored, onEnvironmentSaved, onHistoryVersionFound, platform,
   }
 
   return (

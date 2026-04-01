@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Box, Typography, Checkbox, Button, Divider, Chip } from '@mui/material'
-import type { ToolSummary } from '../../types/tool'
+import type { ToolSummary, ToolType } from '../../types/tool'
+import { toolTypeConfig } from '../../types/tool'
 
 interface Props {
   tools: ToolSummary[]
@@ -70,11 +71,11 @@ export default function ExportPanel({ tools, onExport, onClose }: Props) {
               />
               <Typography variant="body2" sx={{ flex: 1 }}>{t.name}</Typography>
               <Chip
-                label={t.type}
+                label={toolTypeConfig[t.type as ToolType]?.label ?? t.type}
                 size="small"
                 sx={{
-                  bgcolor: t.type === 'shell' ? 'rgba(34,197,94,0.15)' : 'rgba(99,179,237,0.15)',
-                  color: t.type === 'shell' ? '#4ade80' : '#63b3ed',
+                  bgcolor: toolTypeConfig[t.type as ToolType]?.chipBg ?? 'rgba(99,179,237,0.15)',
+                  color: toolTypeConfig[t.type as ToolType]?.chipColor.dark ?? '#63b3ed',
                   fontSize: 11,
                 }}
               />

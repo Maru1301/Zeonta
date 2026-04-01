@@ -6,7 +6,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import RestoreIcon from '@mui/icons-material/Restore'
 import { ListToolVersions, GetToolVersion, RestoreDeletedTool } from '../../../wailsjs/go/main/App'
-import type { ToolVersionSummary, ToolVersion } from '../../types/tool'
+import type { ToolVersionSummary, ToolVersion, ToolType } from '../../types/tool'
+import { toolTypeConfig } from '../../types/tool'
 
 interface Props {
   toolId: string
@@ -64,11 +65,11 @@ export default function TrashDetailPanel({ toolId, toolName, onRestored, onClose
         <Box sx={{ px: 3, py: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box className="flex items-center gap-2 flex-wrap">
             <Chip
-              label={previewVersion?.type ?? ''}
+              label={toolTypeConfig[previewVersion?.type as ToolType]?.label ?? previewVersion?.type ?? ''}
               size="small"
               sx={{
-                bgcolor: previewVersion?.type === 'shell' ? 'rgba(34,197,94,0.15)' : 'rgba(99,179,237,0.15)',
-                color: previewVersion?.type === 'shell' ? '#4ade80' : '#63b3ed',
+                bgcolor: toolTypeConfig[previewVersion?.type as ToolType]?.chipBg ?? 'rgba(99,179,237,0.15)',
+                color: toolTypeConfig[previewVersion?.type as ToolType]?.chipColor.dark ?? '#63b3ed',
               }}
             />
             {previewVersion && (

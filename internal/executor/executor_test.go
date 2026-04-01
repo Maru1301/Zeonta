@@ -9,7 +9,7 @@ import (
 
 func TestResolveEnvVarsInBody(t *testing.T) {
 	tool := store.Tool{
-		Type: store.ToolTypeShell,
+		Type: store.ToolTypePowerShell,
 		Body: "echo {{BASE_URL}}",
 	}
 	envVars := map[string]string{"BASE_URL": "https://example.com"}
@@ -25,7 +25,7 @@ func TestResolveEnvVarsInBody(t *testing.T) {
 
 func TestResolveEnvVarsInsideParamValues(t *testing.T) {
 	tool := store.Tool{
-		Type: store.ToolTypeShell,
+		Type: store.ToolTypePowerShell,
 		Body: "echo [[ENDPOINT]]",
 		Params: []store.Param{
 			{Name: "ENDPOINT", DefaultVal: "{{BASE_URL}}/users"},
@@ -47,7 +47,7 @@ func TestResolveEnvVarsInsideParamValues(t *testing.T) {
 
 func TestResolveParamInBody(t *testing.T) {
 	tool := store.Tool{
-		Type: store.ToolTypeShell,
+		Type: store.ToolTypePowerShell,
 		Body: "echo [[GREETING]]",
 		Params: []store.Param{
 			{Name: "GREETING", DefaultVal: "hello"},
@@ -68,7 +68,7 @@ func TestResolveParamInBody(t *testing.T) {
 
 func TestNonZeroExitCode(t *testing.T) {
 	tool := store.Tool{
-		Type: store.ToolTypeShell,
+		Type: store.ToolTypePowerShell,
 		Body: "exit 1",
 	}
 	result := Run(tool, RunInput{}, nil, nil)
@@ -173,7 +173,7 @@ func TestWrapGoSnippet_SnippetWithOwnMain(t *testing.T) {
 
 func TestEmitCalledPerLine(t *testing.T) {
 	tool := store.Tool{
-		Type: store.ToolTypeShell,
+		Type: store.ToolTypePowerShell,
 		Body: "echo line1\necho line2",
 	}
 

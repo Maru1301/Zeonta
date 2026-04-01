@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  Box, Typography, Chip, Button, Divider, IconButton,
+  Box, Typography, Chip, Button, Divider, IconButton, Tooltip,
   TextField, Select, MenuItem, FormControl, InputLabel,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material'
@@ -8,7 +8,8 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { DeleteTool, UpdateTool } from '../../../wailsjs/go/main/App'
-import type { Tool, Param, ToolType } from '../../types/tool'
+import type { Tool, Param, ToolType, Platform } from '../../types/tool'
+import { toolTypeConfig, isTypeAvailable } from '../../types/tool'
 import ParamEditor from '../EditPanel/ParamEditor'
 
 interface Props {
@@ -16,9 +17,10 @@ interface Props {
   onSaved: (id: string) => void
   onRun: (paramValues: Record<string, string>) => void
   onDeleted: () => void
+  platform: Platform
 }
 
-export default function ToolDetail({ tool, onSaved, onRun, onDeleted }: Props) {
+export default function ToolDetail({ tool, onSaved, onRun, onDeleted, platform }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [error, setError] = useState('')
@@ -28,7 +30,7 @@ export default function ToolDetail({ tool, onSaved, onRun, onDeleted }: Props) {
 
   // edit mode
   const [editName, setEditName] = useState('')
-  const [editType, setEditType] = useState<ToolType>('shell')
+  const [editType, setEditType] = useState<ToolType>('powershell')
   const [editDesc, setEditDesc] = useState('')
   const [editBody, setEditBody] = useState('')
   const [editParams, setEditParams] = useState<Param[]>([])
@@ -102,8 +104,12 @@ export default function ToolDetail({ tool, onSaved, onRun, onDeleted }: Props) {
           <FormControl size="small" sx={{ width: 220 }}>
             <InputLabel>Type</InputLabel>
             <Select value={editType} label="Type" onChange={e => setEditType(e.target.value as ToolType)}>
-              <MenuItem value="shell">Shell (PowerShell)</MenuItem>
-              <MenuItem value="go">Go</MenuItem>
+              {(Object.entries(toolTypeConfig) as [ToolType, typeof toolTypeConfig[ToolType]][])
+                .filter(([t]) => isTypeAvailable(t, platform))
+                .map(([t, cfg]) => (
+                  <MenuItem key={t} value={t}>{cfg.label}</MenuItem>
+                ))
+              }
             </Select>
           </FormControl>
         </Box>
@@ -112,18 +118,27 @@ export default function ToolDetail({ tool, onSaved, onRun, onDeleted }: Props) {
           <Box className="flex items-center gap-2">
             <Typography variant="h6">{tool.name}</Typography>
             <Chip
-              label={tool.type}
+              label={toolTypeConfig[tool.type as ToolType]?.label ?? tool.type}
               size="small"
               sx={{
-                bgcolor: tool.type === 'shell' ? 'rgba(34,197,94,0.15)' : 'rgba(99,179,237,0.15)',
-                color: tool.type === 'shell' ? '#4ade80' : '#63b3ed',
+                bgcolor: toolTypeConfig[tool.type as ToolType]?.chipBg ?? 'rgba(99,179,237,0.15)',
+                color: toolTypeConfig[tool.type as ToolType]?.chipColor.dark ?? '#63b3ed',
               }}
             />
           </Box>
           <Box className="flex gap-1 items-center" sx={{ flexShrink: 0 }}>
-            <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={() => onRun(paramValues)}>
-              Run
-            </Button>
+            <Tooltip title={isTypeAvailable(tool.type as ToolType, platform) ? '' : 'Not supported on this platform'}>
+              <span>
+                <Button
+                  variant="contained"
+                  startIcon={<PlayArrowIcon />}
+                  onClick={() => onRun(paramValues)}
+                  disabled={!isTypeAvailable(tool.type as ToolType, platform)}
+                >
+                  Run
+                </Button>
+              </span>
+            </Tooltip>
 
             <IconButton onClick={startEditing} sx={{ color: 'text.secondary' }}>
               <EditIcon />

@@ -4,17 +4,20 @@ import {
   Divider, FormControl, InputLabel,
 } from '@mui/material'
 import { CreateTool } from '../../../wailsjs/go/main/App'
-import type { Param, ToolType } from '../../types/tool'
+import type { Param, ToolType, Platform } from '../../types/tool'
+import { toolTypeConfig, isTypeAvailable } from '../../types/tool'
 import ParamEditor from './ParamEditor'
 
 interface Props {
   onSaved: (id: string) => void
   onClose: () => void
+  platform: Platform
 }
 
-export default function CreatePanel({ onSaved, onClose }: Props) {
+export default function CreatePanel({ onSaved, onClose, platform }: Props) {
   const [name, setName] = useState('')
-  const [type, setType] = useState<ToolType>('shell')
+  const defaultType: ToolType = platform === 'windows' ? 'powershell' : 'bash'
+  const [type, setType] = useState<ToolType>(defaultType)
   const [body, setBody] = useState('')
   const [desc, setDesc] = useState('')
   const [params, setParams] = useState<Param[]>([])
@@ -44,8 +47,12 @@ export default function CreatePanel({ onSaved, onClose }: Props) {
         <FormControl size="small" sx={{ width: 220 }}>
           <InputLabel>Type</InputLabel>
           <Select value={type} label="Type" onChange={e => setType(e.target.value as ToolType)}>
-            <MenuItem value="shell">Shell (PowerShell)</MenuItem>
-            <MenuItem value="go">Go</MenuItem>
+            {(Object.entries(toolTypeConfig) as [ToolType, typeof toolTypeConfig[ToolType]][])
+              .filter(([t]) => isTypeAvailable(t, platform))
+              .map(([t, cfg]) => (
+                <MenuItem key={t} value={t}>{cfg.label}</MenuItem>
+              ))
+            }
           </Select>
         </FormControl>
       </Box>
