@@ -60,7 +60,7 @@ func TestParseImportFile_Bat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if tools[0].Type != store.ToolTypePowerShell || tools[0].Name != "deploy" {
+	if tools[0].Type != store.ToolTypeCmd || tools[0].Name != "deploy" {
 		t.Errorf("unexpected tool: %+v", tools[0])
 	}
 }
@@ -87,7 +87,7 @@ func TestParseImportFile_InvalidJSON(t *testing.T) {
 }
 
 func TestParseImportFile_UnsupportedExtension(t *testing.T) {
-	_, err := parseImportFile("script.sh", []byte("echo hi"))
+	_, err := parseImportFile("script.txt", []byte("echo hi"))
 	if err == nil {
 		t.Fatal("expected error for unsupported extension, got nil")
 	}

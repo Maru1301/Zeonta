@@ -37,7 +37,7 @@ type exportTool struct {
 }
 
 // parseImportFile converts raw file bytes into a slice of Tool values.
-// Supported formats: .json (Zeonta export), .ps1/.bat (shell script), .go (Go source).
+// Supported formats: .json (Zeonta export), .ps1, .bat/.cmd, .sh, .py, .go.
 func parseImportFile(filename string, content []byte) ([]store.Tool, error) {
 	ext := strings.ToLower(filepath.Ext(filename))
 	base := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
@@ -50,6 +50,10 @@ func parseImportFile(filename string, content []byte) ([]store.Tool, error) {
 		}
 		tools := make([]store.Tool, len(f.Tools))
 		for i, t := range f.Tools {
+			// Migrate pre-v0.7 "shell" type to "powershell" for backwards compatibility.
+			if t.Type == "shell" {
+				t.Type = store.ToolTypePowerShell
+			}
 			tools[i] = store.Tool{Name: t.Name, Type: t.Type, Body: t.Body, Desc: t.Desc, Params: t.Params}
 		}
 		return tools, nil

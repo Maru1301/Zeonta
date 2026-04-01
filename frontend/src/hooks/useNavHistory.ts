@@ -27,7 +27,7 @@ export function findTab(tabState: TabState, entry: NavEntry): { slotIndex: 0 | 1
   return null
 }
 
-export function useNavHistory() {
+export function useNavHistory(tabState: TabState) {
   const historyRef = useRef<NavHistory>({ stack: [], cursor: -1 })
   const [, forceUpdate] = useReducer((x: number) => x + 1, 0)
 
@@ -80,8 +80,16 @@ export function useNavHistory() {
   }, [])
 
   const { stack, cursor } = historyRef.current
-  const canGoBack = cursor > 0
-  const canGoForward = cursor < stack.length - 1
+
+  let canGoBack = false
+  for (let i = cursor - 1; i >= 0; i--) {
+    if (findTab(tabState, stack[i]) !== null) { canGoBack = true; break }
+  }
+
+  let canGoForward = false
+  for (let i = cursor + 1; i < stack.length; i++) {
+    if (findTab(tabState, stack[i]) !== null) { canGoForward = true; break }
+  }
 
   return { pushNav, goBack, goForward, canGoBack, canGoForward }
 }

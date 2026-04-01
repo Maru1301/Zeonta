@@ -96,7 +96,7 @@ export default function App() {
   const [saveCount, setSaveCount] = useState(0)
 
   // ── Navigation history (Go Back / Go Forward) ────────────
-  const { pushNav, goBack, goForward, canGoBack, canGoForward } = useNavHistory()
+  const { pushNav, goBack, goForward, canGoBack, canGoForward } = useNavHistory(tabState)
   // Tracks the last pushed "slotIndex:tabId" key to skip duplicates
   const prevNavKeyRef = useRef<string | null>(null)
   // Set true before programmatic back/forward to suppress the resulting push
