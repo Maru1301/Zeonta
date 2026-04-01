@@ -66,9 +66,14 @@ export function useNavHistory() {
     return h.stack[h.cursor]
   }, [])
 
+  const clearNav = useCallback(() => {
+    historyRef.current = { stack: [], cursor: -1 }
+    forceUpdate()
+  }, [])
+
   const { stack, cursor } = historyRef.current
   const canGoBack = cursor > 0
   const canGoForward = cursor < stack.length - 1
 
-  return { pushNav, goBack, goForward, canGoBack, canGoForward }
+  return { pushNav, goBack, goForward, canGoBack, canGoForward, clearNav }
 }

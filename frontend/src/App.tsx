@@ -96,7 +96,7 @@ export default function App() {
   const [saveCount, setSaveCount] = useState(0)
 
   // ── Navigation history (Go Back / Go Forward) ────────────
-  const { pushNav, goBack, goForward, canGoBack, canGoForward } = useNavHistory()
+  const { pushNav, goBack, goForward, canGoBack, canGoForward, clearNav } = useNavHistory()
   // Tracks the last pushed "slotIndex:tabId" key to skip duplicates
   const prevNavKeyRef = useRef<string | null>(null)
   // Set true before programmatic back/forward to suppress the resulting push
@@ -141,6 +141,12 @@ export default function App() {
       return prev
     })
   }, [])
+
+  // Clear nav history when all tabs are closed across all slots.
+  useEffect(() => {
+    const allEmpty = tabState.slots.every(s => s.tabs.length === 0)
+    if (allEmpty) clearNav()
+  }, [tabState, clearNav])
 
   // Watch tabState for active-tab changes and push to nav history.
   // This covers openTab, activateTab, and all other paths.
