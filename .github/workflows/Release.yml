@@ -46,19 +46,15 @@ jobs:
           - os: windows-latest
             platform: windows/amd64
             artifact_name: zeonta.exe
-            artifact_path: build/bin/zeonta.exe
           - os: macos-latest
             platform: darwin/amd64
             artifact_name: zeonta-macos-amd64
-            artifact_path: build/bin/zeonta
           - os: macos-14
             platform: darwin/arm64
             artifact_name: zeonta-macos-arm64
-            artifact_path: build/bin/zeonta
           - os: ubuntu-22.04
             platform: linux/amd64
             artifact_name: zeonta-linux-amd64
-            artifact_path: build/bin/zeonta
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -88,15 +84,24 @@ jobs:
       - name: Build
         run: wails build -platform ${{ matrix.platform }}
 
-      - name: Rename artifact (non-Windows)
-        if: matrix.os != 'windows-latest'
-        run: mv ${{ matrix.artifact_path }} build/bin/${{ matrix.artifact_name }}
+      - name: Package artifact
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            cd build/bin && zip -r "${{ matrix.artifact_name }}.zip" zeonta.app
+            echo "ARTIFACT_PATH=build/bin/${{ matrix.artifact_name }}.zip" >> $GITHUB_ENV
+          elif [ "$RUNNER_OS" = "Linux" ]; then
+            mv build/bin/zeonta "build/bin/${{ matrix.artifact_name }}"
+            echo "ARTIFACT_PATH=build/bin/${{ matrix.artifact_name }}" >> $GITHUB_ENV
+          else
+            echo "ARTIFACT_PATH=build/bin/zeonta.exe" >> $GITHUB_ENV
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: build/bin/${{ matrix.artifact_name }}
+          path: ${{ env.ARTIFACT_PATH }}
 
   release:
     needs: [check-version, build]
